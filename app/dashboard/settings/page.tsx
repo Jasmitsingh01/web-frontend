@@ -112,6 +112,32 @@ export default function Settings() {
             />
           </div>
 
+          {/* KYC Verification */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs text-slate-400 font-medium">
+                KYC Verification
+              </label>
+              <a
+                href="/dashboard/verification"
+                className="text-sm text-emerald-400 hover:underline"
+              >
+                Start Verification
+              </a>
+            </div>
+            <div className="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-300">Status:</span>
+                <span className="px-2 py-1 bg-amber-500/20 text-amber-400 rounded text-xs font-medium">
+                  Pending
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-2">
+                Complete your KYC verification to unlock full trading features
+              </p>
+            </div>
+          </div>
+
           {/* Two-factor authentication */}
           <div className="mb-4">
             <div className="flex items-center justify-between py-3 border-b border-white/10">
