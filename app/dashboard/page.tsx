@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Modal } from "@/components/ui/modal"
@@ -215,27 +216,28 @@ export default function Trading() {
         title="Complete KYC Verification"
       >
         <div className="space-y-4">
-          <p className="text-sm text-slate-400">Please upload your identification documents to complete the verification process.</p>
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-slate-300">Document Type</label>
-            <select className="w-full bg-slate-900 border border-white/10 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
-              <option>Passport</option>
-              <option>National ID</option>
-              <option>Driver's License</option>
-            </select>
+          <p className="text-sm text-slate-400">
+            To unlock full trading features and higher limits, please complete our secure verification process.
+          </p>
+          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-4">
+            <h4 className="text-sm font-semibold text-emerald-400 mb-2">What you'll need:</h4>
+            <ul className="text-xs text-slate-300 space-y-1">
+              <li>• Government-issued ID (Passport, Driver's License, or National ID)</li>
+              <li>• Proof of address (Utility bill or bank statement)</li>
+              <li>• A clear selfie with your ID</li>
+              <li>• Phone number for verification</li>
+            </ul>
           </div>
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-slate-300">Upload File</label>
-            <div className="border-2 border-dashed border-white/10 rounded-lg p-8 text-center hover:border-emerald-500/50 transition-colors cursor-pointer">
-              <p className="text-sm text-slate-400">Click to upload or drag and drop</p>
-            </div>
-          </div>
+          <p className="text-xs text-slate-400">
+            The verification process typically takes 5-10 minutes. Your documents will be reviewed within 24-48 hours.
+          </p>
           <div className="flex justify-end gap-2 mt-4">
-            <Button variant="ghost" onClick={() => setIsKYCModalOpen(false)}>Cancel</Button>
-            <Button className="bg-emerald-500 hover:bg-emerald-600 text-white" onClick={() => {
-              alert("Documents submitted for review!");
-              setIsKYCModalOpen(false);
-            }}>Submit</Button>
+            <Button variant="ghost" onClick={() => setIsKYCModalOpen(false)}>Later</Button>
+            <Link href="/dashboard/verification">
+              <Button className="bg-emerald-500 hover:bg-emerald-600 text-white">
+                Start Verification
+              </Button>
+            </Link>
           </div>
         </div>
       </Modal>
