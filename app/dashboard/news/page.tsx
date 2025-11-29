@@ -95,12 +95,13 @@ export default function MarketNews() {
     ]
 
     return (
-        <div className="min-h-screen bg-white text-gray-900">
+        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950
+ text-white">
             <div className="max-w-[1600px] mx-auto p-6">
                 {/* Header */}
                 <div className="mb-6">
-                    <h1 className="text-2xl font-bold mb-1">Market news</h1>
-                    <p className="text-sm text-gray-500">Latest headlines, news events, and asset-specific insights</p>
+                    <h1 className="text-2xl font-bold mb-1 text-white">Market news</h1>
+                    <p className="text-sm text-slate-400">Latest headlines, news events, and asset-specific insights</p>
                 </div>
 
                 {/* Main Grid Layout */}
@@ -113,8 +114,8 @@ export default function MarketNews() {
                                 <button
                                     key={cat}
                                     className={`px-4 py-1.5 rounded-full text-xs font-medium transition ${selectedCategories.includes(cat)
-                                        ? 'bg-gray-900 text-white'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        ? 'bg-emerald-500 text-white hover:bg-emerald-500/90'
+                                        : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
                                         }`}
                                     onClick={() => {
                                         if (selectedCategories.includes(cat)) {
@@ -131,39 +132,39 @@ export default function MarketNews() {
 
                         {/* Search/Filter Info */}
                         <div className="mb-4">
-                            <p className="text-xs text-gray-500">Search headlines, tickers, or locations</p>
+                            <p className="text-xs text-slate-400">Search headlines, tickers, or locations</p>
                         </div>
 
                         {/* News Articles List */}
                         <div className="space-y-4">
                             {newsArticles.map((article, idx) => (
-                                <div key={idx} className="border-b border-gray-200 pb-4">
+                                <div key={idx} className="border-b border-white/10 pb-4">
                                     <div className="flex items-start justify-between mb-2">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-2">
-                                                <span className="text-xs font-semibold text-gray-900 bg-gray-100 px-2 py-0.5 rounded">
+                                                <span className="text-xs font-semibold text-white bg-white/10 px-2 py-0.5 rounded">
                                                     {article.category}
                                                 </span>
-                                                <span className="text-xs text-gray-500">{article.source}</span>
-                                                <span className="text-xs text-gray-500">• {article.time}</span>
+                                                <span className="text-xs text-slate-400">{article.source}</span>
+                                                <span className="text-xs text-slate-400">• {article.time}</span>
                                             </div>
                                             <Link href={`/dashboard/news/${article.slug}`}>
-                                                <h3 className="text-base font-bold mb-2 hover:text-blue-600 cursor-pointer transition">
+                                                <h3 className="text-base font-bold mb-2 text-white hover:text-emerald-400 cursor-pointer transition">
                                                     {article.title}
                                                 </h3>
                                             </Link>
-                                            <p className="text-sm text-gray-600 leading-relaxed mb-3">
+                                            <p className="text-sm text-slate-400 leading-relaxed mb-3">
                                                 {article.description}
                                             </p>
                                             <div className="flex items-center gap-2">
                                                 {article.tags.map((tag, tagIdx) => (
-                                                    <span key={tagIdx} className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                                                    <span key={tagIdx} className="text-xs text-slate-300 bg-white/5 px-2 py-1 rounded">
                                                         {tag}
                                                     </span>
                                                 ))}
                                             </div>
                                         </div>
-                                        <div className="text-xs text-gray-400 ml-4 whitespace-nowrap">
+                                        <div className="text-xs text-slate-500 ml-4 whitespace-nowrap">
                                             {idx === 0 && "13:03, Nov 12"}
                                             {idx === 1 && "07:20, Nov 11"}
                                             {idx === 2 && "12:14, Nov 8"}
@@ -174,7 +175,7 @@ export default function MarketNews() {
                                     </div>
                                     {article.reactions && (
                                         <div className="flex items-center gap-3 mt-2">
-                                            <span className="text-xs text-gray-500">Reactions: 4 Smiling • 3 Cool</span>
+                                            <span className="text-xs text-slate-500">Reactions: 4 Smiling • 3 Cool</span>
                                         </div>
                                     )}
                                 </div>
@@ -183,12 +184,12 @@ export default function MarketNews() {
 
                         {/* Load More */}
                         <div className="mt-6 text-center">
-                            <button className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200">
+                            <button className="px-6 py-2 bg-white/5 text-slate-300 rounded-lg text-sm font-medium hover:bg-white/10 hover:text-white transition">
                                 Load more headlines
                             </button>
                         </div>
 
-                        <p className="text-xs text-gray-400 text-center mt-4">
+                        <p className="text-xs text-slate-500 text-center mt-4">
                             Headlines are delayed by up to 5-7 minutes depending on your data package
                         </p>
                     </div>
@@ -197,26 +198,26 @@ export default function MarketNews() {
                     <div className="col-span-2">
                         <div className="sticky top-6">
                             {/* Filter Header */}
-                            <div className="mb-4 pb-3 border-b border-gray-200">
-                                <button className="px-4 py-1.5 bg-gray-900 text-white rounded-lg text-xs font-medium w-full hover:bg-gray-800">
+                            <div className="mb-4 pb-3 border-b border-white/10">
+                                <button className="px-4 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-medium w-full hover:bg-emerald-500/90 transition">
                                     Personalize feeds
                                 </button>
                             </div>
 
                             {/* Filter by asset and region */}
                             <div className="mb-6">
-                                <h3 className="text-sm font-bold mb-3">Filter by asset and region</h3>
-                                <p className="text-xs text-gray-500 mb-3">Choose asset classes</p>
+                                <h3 className="text-sm font-bold mb-3 text-white">Filter by asset and region</h3>
+                                <p className="text-xs text-slate-400 mb-3">Choose asset classes</p>
 
                                 {/* Asset Type Checkboxes */}
                                 <div className="space-y-2 mb-4">
                                     {assetTypes.map((asset) => (
-                                        <label key={asset} className="flex items-center gap-2 cursor-pointer">
+                                        <label key={asset} className="flex items-center gap-2 cursor-pointer group">
                                             <input
                                                 type="checkbox"
-                                                className="w-4 h-4 rounded border-gray-300 text-gray-900"
+                                                className="w-4 h-4 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500/50"
                                             />
-                                            <span className="text-xs text-gray-700">{asset}</span>
+                                            <span className="text-xs text-slate-300 group-hover:text-white transition">{asset}</span>
                                         </label>
                                     ))}
                                 </div>
@@ -226,7 +227,7 @@ export default function MarketNews() {
                                     {["US", "Europe", "Asia", "Global"].map((region) => (
                                         <button
                                             key={region}
-                                            className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium hover:bg-gray-200"
+                                            className="px-3 py-1 bg-white/5 text-slate-300 rounded-full text-xs font-medium hover:bg-white/10 hover:text-white transition"
                                         >
                                             {region}
                                         </button>
@@ -238,7 +239,7 @@ export default function MarketNews() {
                                     {["Crypto news", "Analysis", "Forex", "Economics"].map((filter) => (
                                         <button
                                             key={filter}
-                                            className="w-full text-left px-3 py-2 bg-gray-100 text-gray-700 rounded text-xs font-medium hover:bg-gray-200"
+                                            className="w-full text-left px-3 py-2 bg-white/5 text-slate-300 rounded text-xs font-medium hover:bg-white/10 hover:text-white transition"
                                         >
                                             {filter}
                                         </button>
@@ -247,7 +248,7 @@ export default function MarketNews() {
                             </div>
 
                             {/* Advanced filters link */}
-                            <div className="text-xs text-gray-500 mb-4">
+                            <div className="text-xs text-slate-500 mb-4">
                                 Apply advanced filters or save dashboard preferences.
                             </div>
                         </div>
@@ -257,25 +258,25 @@ export default function MarketNews() {
                     <div className="col-span-2">
                         <div className="sticky top-6 space-y-6">
                             {/* Trending Stocks */}
-                            <div className="border border-gray-200 rounded-lg p-4">
+                            <div className="border border-white/10 rounded-lg p-4 bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm">
                                 <div className="flex items-center justify-between mb-3">
-                                    <h3 className="text-sm font-bold">Trending Stocks</h3>
-                                    <button className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium hover:bg-gray-200">
+                                    <h3 className="text-sm font-bold text-white">Trending Stocks</h3>
+                                    <button className="px-2 py-1 bg-white/5 text-slate-300 rounded text-xs font-medium hover:bg-white/10 hover:text-white transition">
                                         See all
                                     </button>
                                 </div>
-                                <p className="text-xs text-gray-500 mb-3">Most discussed by the community</p>
+                                <p className="text-xs text-slate-400 mb-3">Most discussed by the community</p>
 
                                 <div className="space-y-2">
                                     {trendingStocks.map((stock, idx) => (
-                                        <div key={idx} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                                        <div key={idx} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
                                             <div>
-                                                <div className="text-sm font-semibold">{stock.symbol}</div>
-                                                <div className="text-xs text-gray-500">{stock.name}</div>
+                                                <div className="text-sm font-semibold text-white">{stock.symbol}</div>
+                                                <div className="text-xs text-slate-400">{stock.name}</div>
                                             </div>
                                             <div className="text-right">
-                                                <div className="text-sm font-medium">{stock.price}</div>
-                                                <div className={`text-xs font-medium ${stock.change.startsWith('+') ? 'text-emerald-600' : 'text-red-600'
+                                                <div className="text-sm font-medium text-slate-300">{stock.price}</div>
+                                                <div className={`text-xs font-medium ${stock.change.startsWith('+') ? 'text-emerald-400' : 'text-red-400'
                                                     }`}>
                                                     {stock.change}
                                                 </div>
@@ -286,44 +287,44 @@ export default function MarketNews() {
                             </div>
 
                             {/* Economic Calendar */}
-                            <div className="border border-gray-200 rounded-lg p-4">
-                                <h3 className="text-sm font-bold mb-3">Economic calendar (Today)</h3>
-                                <p className="text-xs text-gray-500 mb-3">Upcoming key market-moving releases</p>
+                            <div className="border border-white/10 rounded-lg p-4 bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm">
+                                <h3 className="text-sm font-bold mb-3 text-white">Economic calendar (Today)</h3>
+                                <p className="text-xs text-slate-400 mb-3">Upcoming key market-moving releases</p>
 
                                 <div className="space-y-3">
                                     {economicEvents.map((event, idx) => (
-                                        <div key={idx} className="pb-3 border-b border-gray-100 last:border-0">
+                                        <div key={idx} className="pb-3 border-b border-white/5 last:border-0">
                                             <div className="flex items-start justify-between mb-1">
-                                                <div className="text-xs font-medium">{event.event}</div>
+                                                <div className="text-xs font-medium text-slate-300">{event.event}</div>
                                                 <div className={`text-xs font-semibold px-2 py-0.5 rounded ${event.impact === 'high'
-                                                    ? 'bg-red-100 text-red-700'
-                                                    : 'bg-yellow-100 text-yellow-700'
+                                                    ? 'bg-red-500/20 text-red-400'
+                                                    : 'bg-yellow-500/20 text-yellow-400'
                                                     }`}>
                                                     {event.impact}
                                                 </div>
                                             </div>
-                                            <div className="text-xs text-gray-500">{event.time}</div>
+                                            <div className="text-xs text-slate-500">{event.time}</div>
                                         </div>
                                     ))}
                                 </div>
 
-                                <button className="w-full mt-3 text-xs text-blue-600 hover:underline text-left">
+                                <button className="w-full mt-3 text-xs text-emerald-400 hover:underline text-left">
                                     Event history shown in your dashboard
                                 </button>
                             </div>
 
                             {/* Scroll Articles */}
-                            <div className="border border-gray-200 rounded-lg p-4">
-                                <h3 className="text-sm font-bold mb-3">Scroll articles</h3>
-                                <p className="text-xs text-gray-500 mb-3">Related articles by our analysts</p>
+                            <div className="border border-white/10 rounded-lg p-4 bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm">
+                                <h3 className="text-sm font-bold mb-3 text-white">Scroll articles</h3>
+                                <p className="text-xs text-slate-400 mb-3">Related articles by our analysts</p>
 
                                 <div className="space-y-3">
                                     {scrollArticles.map((article, idx) => (
-                                        <div key={idx} className="pb-3 border-b border-gray-100 last:border-0">
-                                            <div className="text-sm hover:text-blue-600 cursor-pointer mb-1">
+                                        <div key={idx} className="pb-3 border-b border-white/5 last:border-0">
+                                            <div className="text-sm text-slate-300 hover:text-emerald-400 cursor-pointer mb-1 transition">
                                                 {article.title}
                                             </div>
-                                            <div className="text-xs text-gray-500">{article.time}</div>
+                                            <div className="text-xs text-slate-500">{article.time}</div>
                                         </div>
                                     ))}
                                 </div>

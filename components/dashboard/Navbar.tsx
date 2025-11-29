@@ -28,7 +28,8 @@ const Navbar = () => {
   const pathname = usePathname()
 
   return (
-    <aside className=" flex h-screen w-64 flex-col border-r border-border bg-gradient-to-b from-[#020817] via-[#020617] to-black/95 text-foreground">
+    <aside className=" flex h-screen w-64 flex-col  bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950
+ text-foreground">
       {/* Brand + user */}
       <div className="flex items-center gap-3 border-b border-white/5 px-4 py-4">
         <div className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-500/10 ring-1 ring-emerald-500/40">
@@ -74,11 +75,10 @@ const Navbar = () => {
                 <Button
                   variant={isActive ? 'default' : 'ghost'}
                   size="sm"
-                  className={`w-full justify-start gap-2 rounded-lg px-2 text-sm ${
-                    isActive
+                  className={`w-full justify-start gap-2 rounded-lg px-2 text-sm ${isActive
                       ? 'bg-emerald-500 text-white hover:bg-emerald-500/90'
                       : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
-                  }`}
+                    }`}
                 >
                   <span className="flex h-7 w-7 items-center justify-center rounded-md bg-white/5">
                     <Icon className="h-4 w-4" />
@@ -99,11 +99,10 @@ const Navbar = () => {
             <Button
               variant={pathname === '/dashboard/settings' ? 'default' : 'ghost'}
               size="sm"
-              className={`w-full justify-start gap-2 rounded-lg px-2 text-sm ${
-                pathname === '/dashboard/settings'
+              className={`w-full justify-start gap-2 rounded-lg px-2 text-sm ${pathname === '/dashboard/settings'
                   ? 'bg-emerald-500 text-white hover:bg-emerald-500/90'
                   : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
-              }`}
+                }`}
             >
               <span className="flex h-7 w-7 items-center justify-center rounded-md bg-white/5">
                 <Settings className="h-4 w-4" />

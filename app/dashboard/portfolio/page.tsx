@@ -147,31 +147,31 @@ export default function PortfolioDashboard() {
     }]
 
     return (
-        <div className="min-h-screen bg-[#f5f5f5] text-gray-900 p-6">
+        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 text-white p-6">
             <div className="max-w-[1600px] mx-auto">
                 {/* Header */}
                 <div className="mb-6">
-                    <h1 className="text-2xl font-bold mb-1">Portfolio</h1>
-                    <p className="text-sm text-gray-600">Overview of Bitcoin, across Stocks, Forex, and Crypto</p>
+                    <h1 className="text-2xl font-bold mb-1 text-white">Portfolio</h1>
+                    <p className="text-sm text-slate-400">Overview of Bitcoin, across Stocks, Forex, and Crypto</p>
                 </div>
 
                 {/* Portfolio Summary Cards */}
                 <div className="grid grid-cols-4 gap-4 mb-6">
-                    <div className="bg-white rounded-lg border border-gray-300 p-4">
-                        <div className="text-xs text-gray-600 mb-1">Total Value</div>
-                        <div className="text-2xl font-bold">{portfolioStats.totalValue}</div>
+                    <div className="bg-transparent rounded-lg border border-white/5 p-4">
+                        <div className="text-xs text-slate-400 mb-1">Total Value</div>
+                        <div className="text-2xl font-bold text-white">{portfolioStats.totalValue}</div>
                     </div>
-                    <div className="bg-white rounded-lg border border-gray-300 p-4">
-                        <div className="text-xs text-gray-600 mb-1">Cash (USD)</div>
-                        <div className="text-2xl font-bold">{portfolioStats.cashUSD}</div>
+                    <div className="bg-transparent rounded-lg border border-white/5 p-4">
+                        <div className="text-xs text-slate-400 mb-1">Cash (USD)</div>
+                        <div className="text-2xl font-bold text-white">{portfolioStats.cashUSD}</div>
                     </div>
-                    <div className="bg-white rounded-lg border border-gray-300 p-4">
-                        <div className="text-xs text-gray-600 mb-1">Total P/L</div>
-                        <div className="text-2xl font-bold text-emerald-600">{portfolioStats.totalPL}</div>
+                    <div className="bg-transparent rounded-lg border border-white/5 p-4">
+                        <div className="text-xs text-slate-400 mb-1">Total P/L</div>
+                        <div className="text-2xl font-bold text-emerald-400">{portfolioStats.totalPL}</div>
                     </div>
-                    <div className="bg-white rounded-lg border border-gray-300 p-4">
-                        <div className="text-xs text-gray-600 mb-1">BTC Ledger</div>
-                        <div className="text-2xl font-bold text-emerald-600">{portfolioStats.btcLedger}</div>
+                    <div className="bg-transparent rounded-lg border border-white/5 p-4">
+                        <div className="text-xs text-slate-400 mb-1">BTC Ledger</div>
+                        <div className="text-2xl font-bold text-emerald-400">{portfolioStats.btcLedger}</div>
                     </div>
                 </div>
 
@@ -180,31 +180,31 @@ export default function PortfolioDashboard() {
                     {/* Left Column - Chart */}
                     <div className="col-span-8">
                         {/* Performance Section */}
-                        <div className="bg-white rounded-lg border border-gray-300 p-5 mb-6">
+                        <div className="bg-transparent rounded-lg border border-white/5 p-5 mb-6">
                             <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-lg font-bold">Performance</h2>
+                                <h2 className="text-lg font-bold text-white">Performance</h2>
                                 <div className="flex items-center gap-2">
                                     {performanceFilters.map((filter) => (
                                         <button
                                             key={filter}
                                             className={`px-3 py-1.5 rounded text-xs font-medium transition ${filter === "All Assets"
-                                                ? 'bg-gray-900 text-white'
-                                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                                ? 'bg-emerald-500 text-white hover:bg-emerald-500/90'
+                                                : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
                                                 }`}
                                         >
                                             {filter}
                                         </button>
                                     ))}
-                                    <button className="px-3 py-1.5 rounded text-xs font-medium bg-gray-200 text-gray-700 hover:bg-gray-300">
+                                    <button className="px-3 py-1.5 rounded text-xs font-medium bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white">
                                         Crypto
                                     </button>
                                 </div>
                             </div>
 
-                            <div className="text-xs text-gray-600 mb-4">BTC converts to USD (2024)</div>
+                            <div className="text-xs text-slate-400 mb-4">BTC converts to USD (2024)</div>
 
                             {/* Chart */}
-                            <div className="bg-[#1a1a1a] rounded-lg p-4">
+                            <div className="bg-black/40 rounded-lg p-4 border border-white/5">
                                 <Chart
                                     options={chartOptions}
                                     series={chartSeries}
@@ -221,8 +221,8 @@ export default function PortfolioDashboard() {
                                             key={btn}
                                             onClick={() => setChartType(btn)}
                                             className={`px-3 py-1 rounded text-xs font-medium transition ${chartType === btn
-                                                ? 'bg-gray-900 text-white'
-                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                ? 'bg-emerald-500 text-white hover:bg-emerald-500/90'
+                                                : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
                                                 }`}
                                         >
                                             {btn}
@@ -232,25 +232,25 @@ export default function PortfolioDashboard() {
                                 <div className="flex items-center gap-2">
                                     <span className="flex items-center gap-1 text-xs">
                                         <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
-                                        <span className="text-gray-600">USD</span>
+                                        <span className="text-slate-400">USD</span>
                                     </span>
                                     <span className="flex items-center gap-1 text-xs">
                                         <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
-                                        <span className="text-gray-600">BTC</span>
+                                        <span className="text-slate-400">BTC</span>
                                     </span>
                                 </div>
                             </div>
 
-                            <div className="text-xs text-gray-500 mt-2">
+                            <div className="text-xs text-slate-500 mt-2">
                                 Source: CBOE, CME AG, Binance, Coinbit, TSXUSDF, CBOE, Crypto.co
                             </div>
                         </div>
 
                         {/* Positions Table */}
-                        <div className="bg-white rounded-lg border border-gray-300 p-5">
+                        <div className="bg-transparent rounded-lg border border-white/5 p-5">
                             <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-lg font-bold">Positions</h2>
-                                <button className="px-4 py-1.5 rounded bg-gray-200 text-gray-700 text-xs font-medium hover:bg-gray-300">
+                                <h2 className="text-lg font-bold text-white">Positions</h2>
+                                <button className="px-4 py-1.5 rounded bg-white/5 text-slate-400 text-xs font-medium hover:bg-white/10 hover:text-white">
                                     Group by Asset class
                                 </button>
                             </div>
@@ -258,7 +258,7 @@ export default function PortfolioDashboard() {
                             <div className="overflow-x-auto">
                                 <table className="w-full text-xs">
                                     <thead>
-                                        <tr className="border-b border-gray-300 text-gray-600">
+                                        <tr className="border-b border-white/10 text-slate-400">
                                             <th className="text-left py-3 px-3 font-semibold">Symbol</th>
                                             <th className="text-left py-3 px-3 font-semibold">Name / type</th>
                                             <th className="text-left py-3 px-3 font-semibold">Qty</th>
@@ -271,16 +271,16 @@ export default function PortfolioDashboard() {
                                     </thead>
                                     <tbody>
                                         {positions.map((pos, idx) => (
-                                            <tr key={idx} className="border-b border-gray-200 hover:bg-gray-50">
-                                                <td className="py-3 px-3 font-semibold">{pos.symbol}</td>
-                                                <td className="py-3 px-3 text-gray-600">{pos.name}</td>
-                                                <td className="py-3 px-3">{pos.qty}</td>
-                                                <td className="py-3 px-3">{pos.price}</td>
-                                                <td className="py-3 px-3 text-emerald-600">{pos.value}</td>
-                                                <td className="py-3 px-3">{pos.pl}</td>
-                                                <td className="py-3 px-3 font-medium">{pos.roi}</td>
-                                                <td className={`py-3 px-3 font-medium ${pos.action.includes('-') ? 'text-red-600' :
-                                                    pos.action === '0%' || pos.action === '0.4%' ? 'text-gray-600' : 'text-emerald-600'
+                                            <tr key={idx} className="border-b border-white/5 hover:bg-white/5">
+                                                <td className="py-3 px-3 font-semibold text-white">{pos.symbol}</td>
+                                                <td className="py-3 px-3 text-slate-400">{pos.name}</td>
+                                                <td className="py-3 px-3 text-slate-300">{pos.qty}</td>
+                                                <td className="py-3 px-3 text-slate-300">{pos.price}</td>
+                                                <td className="py-3 px-3 text-emerald-400">{pos.value}</td>
+                                                <td className="py-3 px-3 text-slate-300">{pos.pl}</td>
+                                                <td className="py-3 px-3 font-medium text-slate-300">{pos.roi}</td>
+                                                <td className={`py-3 px-3 font-medium ${pos.action.includes('-') ? 'text-red-400' :
+                                                    pos.action === '0%' || pos.action === '0.4%' ? 'text-slate-400' : 'text-emerald-400'
                                                     }`}>
                                                     {pos.action}
                                                 </td>
@@ -290,7 +290,7 @@ export default function PortfolioDashboard() {
                                 </table>
                             </div>
 
-                            <div className="text-xs text-gray-500 mt-3">
+                            <div className="text-xs text-slate-500 mt-3">
                                 By default, Positions by GGOS symbol | Portfolio data displayed in this table dates back to the 1950s to the current date, sources: www.company.com
                             </div>
                         </div>
@@ -299,79 +299,79 @@ export default function PortfolioDashboard() {
                     {/* Right Column - Allocation & Risk */}
                     <div className="col-span-4">
                         {/* Allocation Section */}
-                        <div className="bg-white rounded-lg border border-gray-300 p-5 mb-6">
-                            <h2 className="text-lg font-bold mb-4">Allocation</h2>
-                            <div className="text-xs text-gray-600 mb-3">Current breakdown</div>
+                        <div className="bg-transparent rounded-lg border border-white/5 p-5 mb-6">
+                            <h2 className="text-lg font-bold mb-4 text-white">Allocation</h2>
+                            <div className="text-xs text-slate-400 mb-3">Current breakdown</div>
 
                             {allocations.map((item, idx) => (
                                 <div key={idx} className="mb-4">
                                     <div className="flex items-center justify-between mb-1">
-                                        <span className="text-sm font-medium">{item.name}</span>
-                                        <span className="text-sm font-bold">{item.percent}</span>
+                                        <span className="text-sm font-medium text-white">{item.name}</span>
+                                        <span className="text-sm font-bold text-white">{item.percent}</span>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden mr-3">
+                                        <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden mr-3">
                                             <div
                                                 className={`h-full ${idx === 0 ? 'bg-orange-500' :
                                                     idx === 1 ? 'bg-blue-500' :
-                                                        idx === 2 ? 'bg-purple-500' : 'bg-gray-400'
+                                                        idx === 2 ? 'bg-purple-500' : 'bg-slate-400'
                                                     }`}
                                                 style={{ width: item.percent }}
                                             ></div>
                                         </div>
-                                        <span className="text-xs text-gray-600">{item.value}</span>
+                                        <span className="text-xs text-slate-400">{item.value}</span>
                                     </div>
                                 </div>
                             ))}
                         </div>
 
                         {/* Risk & Insurance Section */}
-                        <div className="bg-white rounded-lg border border-gray-300 p-5 mb-6">
-                            <h2 className="text-lg font-bold mb-4">Risk & Insurance</h2>
+                        <div className="bg-transparent rounded-lg border border-white/5 p-5 mb-6">
+                            <h2 className="text-lg font-bold mb-4 text-white">Risk & Insurance</h2>
 
                             <div className="space-y-4">
                                 <div>
-                                    <div className="text-xs text-gray-600 mb-1">Avg. Daily portfolio volatility</div>
-                                    <div className="text-sm font-semibold">{riskData.avgDailyValue}</div>
+                                    <div className="text-xs text-slate-400 mb-1">Avg. Daily portfolio volatility</div>
+                                    <div className="text-sm font-semibold text-white">{riskData.avgDailyValue}</div>
                                 </div>
 
                                 <div>
-                                    <div className="text-xs text-gray-600 mb-1">Loss insurance</div>
-                                    <div className="text-sm font-semibold">{riskData.lossInsurance}</div>
-                                    <div className="text-xs text-gray-500">{riskData.available}</div>
+                                    <div className="text-xs text-slate-400 mb-1">Loss insurance</div>
+                                    <div className="text-sm font-semibold text-white">{riskData.lossInsurance}</div>
+                                    <div className="text-xs text-slate-500">{riskData.available}</div>
                                 </div>
 
                                 <div>
-                                    <div className="text-xs text-gray-600 mb-1">Dividend yield</div>
-                                    <div className="text-sm font-semibold">{riskData.dividendYield}</div>
-                                    <div className="text-xs text-gray-500">{riskData.coverage}</div>
+                                    <div className="text-xs text-slate-400 mb-1">Dividend yield</div>
+                                    <div className="text-sm font-semibold text-white">{riskData.dividendYield}</div>
+                                    <div className="text-xs text-slate-500">{riskData.coverage}</div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Recent Activity Section */}
-                        <div className="bg-white rounded-lg border border-gray-300 p-5">
+                        <div className="bg-transparent rounded-lg border border-white/5 p-5">
                             <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-lg font-bold">Recent activity</h2>
-                                <button className="px-3 py-1 rounded bg-gray-200 text-gray-700 text-xs font-medium hover:bg-gray-300">
+                                <h2 className="text-lg font-bold text-white">Recent activity</h2>
+                                <button className="px-3 py-1 rounded bg-white/5 text-slate-400 text-xs font-medium hover:bg-white/10 hover:text-white">
                                     View all
                                 </button>
                             </div>
 
                             <div className="space-y-3">
                                 {recentActivity.map((activity, idx) => (
-                                    <div key={idx} className="flex items-start justify-between pb-3 border-b border-gray-200 last:border-0">
+                                    <div key={idx} className="flex items-start justify-between pb-3 border-b border-white/5 last:border-0">
                                         <div className="flex-1">
-                                            <div className="text-xs text-gray-600 mb-1">{activity.date}</div>
-                                            <div className="text-sm">{activity.action}</div>
+                                            <div className="text-xs text-slate-400 mb-1">{activity.date}</div>
+                                            <div className="text-sm text-slate-300">{activity.action}</div>
                                             {activity.status && (
-                                                <span className="inline-block mt-1 px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded">
+                                                <span className="inline-block mt-1 px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs rounded">
                                                     {activity.status}
                                                 </span>
                                             )}
                                         </div>
                                         {activity.value && (
-                                            <div className={`text-sm font-semibold ${activity.value.includes('+') ? 'text-emerald-600' : 'text-red-600'
+                                            <div className={`text-sm font-semibold ${activity.value.includes('+') ? 'text-emerald-400' : 'text-red-400'
                                                 }`}>
                                                 {activity.value}
                                             </div>

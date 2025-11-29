@@ -143,10 +143,10 @@ export default function NewsArticle({ params }: { params: { slug: string } }) {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-white flex items-center justify-center">
+            <div className="min-h-screenbg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading article...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4"></div>
+                    <p className="text-slate-400">Loading article...</p>
                 </div>
             </div>
         );
@@ -158,20 +158,20 @@ export default function NewsArticle({ params }: { params: { slug: string } }) {
     }
 
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screenbg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950">
             {/* Header */}
-            <header className="border-b border-gray-200 px-6 py-4">
+            <header className="border-b border-white/10 px-6 py-4 bg-slate-900/50">
                 <div className="flex items-center justify-between max-w-7xl mx-auto">
-                    <div className="text-sm text-gray-600">
-                        <Link href="/dashboard/news" className="hover:text-gray-900">News</Link>
+                    <div className="text-sm text-slate-400">
+                        <Link href="/dashboard/news" className="hover:text-white">News</Link>
                         {' '}/{' '}
-                        <span className="text-gray-900">{article.category}</span>
+                        <span className="text-white">{article.category}</span>
                     </div>
                     <div className="flex gap-2">
-                        <button className="px-4 py-2 border border-gray-300 rounded text-sm hover:bg-gray-50 transition">
+                        <button className="px-4 py-2 border border-white/10 rounded text-sm text-slate-300 hover:bg-white/5 transition">
                             Share
                         </button>
-                        <button className="px-4 py-2 bg-black text-white rounded text-sm hover:bg-gray-800 transition">
+                        <button className="px-4 py-2 bg-emerald-500 text-white rounded text-sm hover:bg-emerald-500/90 transition">
                             Save Article
                         </button>
                     </div>
@@ -184,14 +184,14 @@ export default function NewsArticle({ params }: { params: { slug: string } }) {
                     {/* Left Content */}
                     <article className="flex-1 max-w-3xl">
                         <div className="mb-6">
-                            <span className="text-sm text-gray-500 uppercase tracking-wide font-semibold">
+                            <span className="text-sm text-slate-400 uppercase tracking-wide font-semibold">
                                 {article.category}
                             </span>
-                            <h1 className="text-4xl font-bold mt-2 mb-4 leading-tight text-gray-900">
+                            <h1 className="text-4xl font-bold mt-2 mb-4 leading-tight text-white">
                                 {article.title}
                             </h1>
-                            <div className="flex items-center gap-4 text-sm text-gray-600">
-                                <span className="font-medium">{article.author}</span>
+                            <div className="flex items-center gap-4 text-sm text-slate-400">
+                                <span className="font-medium text-white">{article.author}</span>
                                 <span>•</span>
                                 <time>{article.publishDate}</time>
                                 <span>•</span>
@@ -200,7 +200,7 @@ export default function NewsArticle({ params }: { params: { slug: string } }) {
                         </div>
 
                         {/* Hero Image */}
-                        <div className="relative w-full h-96 mb-8 bg-gray-200 rounded-lg overflow-hidden">
+                        <div className="relative w-full h-96 mb-8 bg-slate-800 rounded-lg overflow-hidden border border-white/10">
                             <Image
                                 src={article.heroImage}
                                 alt={article.title}
@@ -213,17 +213,17 @@ export default function NewsArticle({ params }: { params: { slug: string } }) {
 
                         {/* Article Content */}
                         <div className="prose prose-lg max-w-none">
-                            <p className="text-lg leading-relaxed text-gray-800 mb-6">
+                            <p className="text-lg leading-relaxed text-slate-300 mb-6">
                                 {article.content}
                             </p>
                         </div>
 
                         {/* Tags */}
-                        <div className="flex flex-wrap gap-2 mt-8 pt-6 border-t border-gray-200">
+                        <div className="flex flex-wrap gap-2 mt-8 pt-6 border-t border-white/10">
                             {article.tags.map((tag: string) => (
                                 <span
                                     key={tag}
-                                    className="px-3 py-1 bg-gray-100 text-sm rounded-full text-gray-700 hover:bg-gray-200 transition cursor-pointer"
+                                    className="px-3 py-1 bg-white/5 text-sm rounded-full text-slate-300 hover:bg-white/10 transition cursor-pointer"
                                 >
                                     #{tag}
                                 </span>
@@ -231,9 +231,9 @@ export default function NewsArticle({ params }: { params: { slug: string } }) {
                         </div>
 
                         {/* Source Info */}
-                        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                            <p className="text-xs text-gray-600">
-                                <span className="font-semibold">Source:</span> {article.source} • Published {article.time}
+                        <div className="mt-6 p-4 bg-white/5 rounded-lg border border-white/10">
+                            <p className="text-xs text-slate-400">
+                                <span className="font-semibold text-white">Source:</span> {article.source} • Published {article.time}
                             </p>
                         </div>
                     </article>
@@ -241,24 +241,24 @@ export default function NewsArticle({ params }: { params: { slug: string } }) {
                     {/* Right Sidebar */}
                     <aside className="w-80 space-y-6">
                         {/* Stock Ticker Widget */}
-                        <div className="border border-gray-200 rounded-lg p-4">
+                        <div className="border border-white/10 rounded-lg p-4 bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm">
                             <div className="flex justify-between items-center mb-2">
-                                <span className="text-sm font-medium">Related Stocks</span>
-                                <button className="text-xs text-blue-600 hover:underline">View Chart</button>
+                                <span className="text-sm font-medium text-white">Related Stocks</span>
+                                <button className="text-xs text-emerald-400 hover:underline">View Chart</button>
                             </div>
                             <div className="flex gap-2 mt-4">
-                                <button className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm hover:bg-gray-50 transition">
+                                <button className="flex-1 px-3 py-2 border border-white/10 rounded text-sm text-slate-300 hover:bg-white/5 transition">
                                     NVDA
                                 </button>
-                                <button className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm hover:bg-gray-50 transition">
+                                <button className="flex-1 px-3 py-2 border border-white/10 rounded text-sm text-slate-300 hover:bg-white/5 transition">
                                     MSFT
                                 </button>
-                                <button className="flex-1 px-3 py-2 bg-gray-900 text-white rounded text-sm hover:bg-gray-800 transition">
+                                <button className="flex-1 px-3 py-2 bg-emerald-500 text-white rounded text-sm hover:bg-emerald-500/90 transition">
                                     GOOGL
                                 </button>
                             </div>
                             <div className="flex gap-2 mt-2">
-                                <button className="px-3 py-2 border border-gray-300 rounded text-sm hover:bg-gray-50 transition">
+                                <button className="px-3 py-2 border border-white/10 rounded text-sm text-slate-300 hover:bg-white/5 transition">
                                     AAPL
                                 </button>
                             </div>
@@ -266,33 +266,33 @@ export default function NewsArticle({ params }: { params: { slug: string } }) {
 
                         {/* Related Articles */}
                         <div className="space-y-4">
-                            <h3 className="text-sm font-semibold text-gray-900">Similar articles</h3>
+                            <h3 className="text-sm font-semibold text-white">Similar articles</h3>
 
                             {relatedArticles.length > 0 ? (
                                 relatedArticles.map((related) => (
                                     <Link
                                         key={related.slug}
                                         href={`/dashboard/news/${related.slug}`}
-                                        className="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition"
+                                        className="block p-4 border border-white/10 rounded-lg bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm hover:bg-white/5 hover:border-white/20 transition"
                                     >
-                                        <h4 className="text-sm font-medium mb-1 text-gray-900">{related.title}</h4>
-                                        <p className="text-xs text-gray-500 line-clamp-2">{related.excerpt}</p>
+                                        <h4 className="text-sm font-medium mb-1 text-white">{related.title}</h4>
+                                        <p className="text-xs text-slate-400 line-clamp-2">{related.excerpt}</p>
                                     </Link>
                                 ))
                             ) : (
-                                <p className="text-sm text-gray-500 p-4 border border-gray-200 rounded-lg">
+                                <p className="text-sm text-slate-400 p-4 border border-white/10 rounded-lg bg-white/5">
                                     No related articles found.
                                 </p>
                             )}
                         </div>
 
                         {/* Newsletter Signup */}
-                        <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                            <h3 className="text-sm font-semibold mb-2">Stay Updated</h3>
-                            <p className="text-xs text-gray-600 mb-3">
+                        <div className="border border-white/10 rounded-lg p-4 bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm">
+                            <h3 className="text-sm font-semibold mb-2 text-white">Stay Updated</h3>
+                            <p className="text-xs text-slate-400 mb-3">
                                 Get the latest market news delivered to your inbox.
                             </p>
-                            <button className="w-full px-4 py-2 bg-black text-white rounded text-sm hover:bg-gray-800 transition">
+                            <button className="w-full px-4 py-2 bg-emerald-500 text-white rounded text-sm hover:bg-emerald-500/90 transition">
                                 Subscribe
                             </button>
                         </div>

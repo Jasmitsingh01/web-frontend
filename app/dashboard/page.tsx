@@ -97,35 +97,9 @@ export default function Trading() {
   const verificationPending = notifications.some(n => n.message.toLowerCase().includes("verification") && !n.done);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      {/* Glass morphism navbar */}
-      <nav className="sticky top-0 z-50 backdrop-blur-xl bg-slate-900/60 border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-8">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-              TradePro
-            </h1>
-            <div className="hidden md:flex gap-6 text-sm">
-              <a href="#" className="text-emerald-400 font-medium">Dashboard</a>
-              <a href="#" className="text-slate-400 hover:text-white transition">Markets</a>
-              <a href="#" className="text-slate-400 hover:text-white transition">Portfolio</a>
-              <a href="#" className="text-slate-400 hover:text-white transition">Trading</a>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white hover:bg-white/5">
-              <Bell className="w-5 h-5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white hover:bg-white/5">
-              <Settings className="w-5 h-5" />
-            </Button>
-            <Button className="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white px-5 py-2 rounded-lg shadow-lg shadow-emerald-500/20 transition-all hover:shadow-emerald-500/40">
-              <CreditCard className="w-4 h-4 mr-2" />
-              Deposit
-            </Button>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950
+">
+
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Welcome Header with Stats */}
@@ -145,7 +119,7 @@ export default function Trading() {
 
           {/* Enhanced Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="relative overflow-hidden bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm border border-white/5 rounded-2xl p-6 shadow-xl hover:shadow-emerald-500/10 transition-all group">
+            <div className="relative overflow-hidden  rounded-2xl p-6 shadow-xl hover:shadow-emerald-500/10 transition-all group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 transition-all"></div>
               <div className="relative">
                 <div className="flex justify-between items-start mb-4">
@@ -167,7 +141,7 @@ export default function Trading() {
               </div>
             </div>
 
-            <div className="relative overflow-hidden bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm border border-white/5 rounded-2xl p-6 shadow-xl hover:shadow-blue-500/10 transition-all group">
+            <div className="relative overflow-hidden  border border-white/5 rounded-2xl p-6 shadow-xl hover:shadow-blue-500/10 transition-all group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all"></div>
               <div className="relative">
                 <div className="flex justify-between items-start mb-4">
@@ -186,7 +160,7 @@ export default function Trading() {
               </div>
             </div>
 
-            <div className="relative overflow-hidden bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm border border-white/5 rounded-2xl p-6 shadow-xl hover:shadow-amber-500/10 transition-all group">
+            <div className="relative overflow-hidden  border border-white/5 rounded-2xl p-6 shadow-xl hover:shadow-amber-500/10 transition-all group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl group-hover:bg-amber-500/20 transition-all"></div>
               <div className="relative">
                 <div className="flex justify-between items-start mb-4">
@@ -213,7 +187,7 @@ export default function Trading() {
           {/* Left Sidebar - Notifications & Watchlist */}
           <div className="lg:col-span-4 space-y-6">
             {/* Notifications Card */}
-            <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm border border-white/5 rounded-2xl p-6 shadow-xl">
+            <div className=" border border-white/5 rounded-2xl p-6 shadow-xl">
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                   <Bell className="w-5 h-5 text-emerald-400" />
@@ -230,8 +204,8 @@ export default function Trading() {
                   <div
                     key={note.id}
                     className={`p-4 rounded-xl border transition-all hover:scale-[1.02] ${note.done
-                        ? "bg-slate-800/30 border-white/5"
-                        : "bg-amber-500/5 border-amber-500/20"
+                      ? "bg-slate-800/30 border-white/5"
+                      : "bg-amber-500/5 border-amber-500/20"
                       }`}
                   >
                     <div className="flex items-start gap-3">
@@ -254,7 +228,7 @@ export default function Trading() {
             </div>
 
             {/* Enhanced Watchlist */}
-            <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm border border-white/5 rounded-2xl p-6 shadow-xl">
+            <div className=" border border-white/5 rounded-2xl p-6 shadow-xl">
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-emerald-400" />
@@ -299,7 +273,7 @@ export default function Trading() {
           <div className="lg:col-span-8 space-y-6">
             {/* Charts Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm border border-white/5 rounded-2xl p-6 shadow-xl">
+              <div className=" border border-white/5 rounded-2xl p-6 shadow-xl">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-semibold text-white">Portfolio Performance</h3>
                   <div className="flex gap-1">
@@ -311,7 +285,7 @@ export default function Trading() {
                 <Chart options={lineChartOptions} series={lineChartSeries} type="area" height={250} />
               </div>
 
-              <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm border border-white/5 rounded-2xl p-6 shadow-xl">
+              <div className=" border border-white/5 rounded-2xl p-6 shadow-xl">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-semibold text-white">Deposit Activity</h3>
                   <div className="flex gap-1">
@@ -325,7 +299,7 @@ export default function Trading() {
             </div>
 
             {/* Activity Table */}
-            <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm border border-white/5 rounded-2xl p-6 shadow-xl">
+            <div className=" border border-white/5 rounded-2xl p-6 shadow-xl">
               <div className="flex justify-between items-center mb-5">
                 <h3 className="text-lg font-semibold text-white">Recent Activity</h3>
                 <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white text-xs">
@@ -349,10 +323,10 @@ export default function Trading() {
                         <td className="py-4 px-4 text-slate-400 text-sm">{row.date}</td>
                         <td className="py-4 px-4">
                           <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold ${row.type === 'BUY'
-                              ? "bg-emerald-500/10 text-emerald-400"
-                              : row.type === 'SELL'
-                                ? "bg-red-500/10 text-red-400"
-                                : "bg-blue-500/10 text-blue-400"
+                            ? "bg-emerald-500/10 text-emerald-400"
+                            : row.type === 'SELL'
+                              ? "bg-red-500/10 text-red-400"
+                              : "bg-blue-500/10 text-blue-400"
                             }`}>
                             {row.type}
                           </span>
