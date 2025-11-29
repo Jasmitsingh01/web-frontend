@@ -1,217 +1,454 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Activity, CreditCard, DollarSign, Users, ArrowUpRight, ArrowDownRight, FileCheck, Clock, AlertCircle, CheckCircle2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { useState } from "react"
+import Link from "next/link"
+import {
+    Users,
+    DollarSign,
+    TrendingUp,
+    FileText,
+    Search,
+    Filter,
+    MoreVertical,
+    ArrowUpRight,
+    ArrowDownRight,
+    CheckCircle,
+    Clock,
+    XCircle
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function AdminDashboard() {
-    const { data: session } = useSession()
+    const [activeTab, setActiveTab] = useState<"overview" | "users" | "verifications" | "payments" | "investments">("overview")
+    const [searchQuery, setSearchQuery] = useState("")
 
-    const stats = [
-        {
-            title: 'Total Revenue',
-            value: '$45,231.89',
-            change: '+20.1% from last month',
-            icon: DollarSign,
-            trend: 'up',
-            color: 'text-emerald-500',
-            bgColor: 'bg-emerald-500/10',
-        },
-        {
-            title: 'Active Traders',
-            value: '2,350',
-            change: '+180.1% from last month',
-            icon: Activity,
-            trend: 'up',
-            color: 'text-blue-500',
-            bgColor: 'bg-blue-500/10',
-        },
-        {
-            title: 'Total Users',
-            value: '12,234',
-            change: '+19% from last month',
-            icon: Users,
-            trend: 'up',
-            color: 'text-purple-500',
-            bgColor: 'bg-purple-500/10',
-        },
-        {
-            title: 'Market Activity',
-            value: '573',
-            change: '+201 since last hour',
-            icon: Activity,
-            trend: 'up',
-            color: 'text-orange-500',
-            bgColor: 'bg-orange-500/10',
-        },
-    ]
+    // Mock data
+    const stats = {
+        totalUsers: 1247,
+        pendingVerifications: 23,
+        totalInvestments: "$2,450,000",
+        pendingPayments: 15,
+        activeUsers: 892,
+        revenue: "$145,231"
+    }
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {/* Welcome Header */}
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-violet-600 to-indigo-600 p-8 text-white shadow-2xl">
-                <div className="absolute top-0 right-0 -mt-10 -mr-10 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
-                <div className="absolute bottom-0 left-0 -mb-10 -ml-10 h-64 w-64 rounded-full bg-black/10 blur-3xl" />
-
-                <div className="relative z-10">
-                    <h1 className="text-4xl font-bold mb-2">
-                        Welcome back, {session?.user?.name?.split(' ')[0] || 'Admin'}! 👋
-                    </h1>
-                    <p className="text-indigo-100 text-lg max-w-2xl">
-                        Here's what's happening with your trading platform today. You have 12 new verification requests pending review.
-                    </p>
-                    <div className="mt-6 flex gap-3">
-                        <Button className="bg-white text-indigo-600 hover:bg-indigo-50 border-none shadow-lg shadow-black/10">
-                            View Reports
-                        </Button>
-                        <Button variant="outline" className="bg-indigo-600/50 text-white border-white/20 hover:bg-indigo-600/70 backdrop-blur-sm">
-                            Manage Users
-                        </Button>
-                    </div>
-                </div>
-            </div>
-
+        <div className="space-y-8">
             {/* Stats Grid */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                {stats.map((stat) => (
-                    <Card key={stat.title} className="border-none shadow-lg hover:shadow-xl transition-all duration-300 bg-white dark:bg-[#121212]">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">
-                                {stat.title}
-                            </CardTitle>
-                            <div className={`p-2.5 rounded-xl ${stat.bgColor}`}>
-                                <stat.icon className={`h-5 w-5 ${stat.color}`} />
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</div>
-                            <div className="flex items-center mt-1">
-                                <div className={`flex items-center text-xs font-medium ${stat.trend === 'up' ? 'text-emerald-500' : 'text-red-500'}`}>
-                                    {stat.trend === 'up' ? <ArrowUpRight className="h-3 w-3 mr-1" /> : <ArrowDownRight className="h-3 w-3 mr-1" />}
-                                    <span className="text-muted-foreground">{stat.change}</span>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
-
-            <div className="grid gap-6 lg:grid-cols-3">
-                {/* Verified User Documents Section - Spans 2 columns */}
-                <Card className="lg:col-span-2 border-none shadow-lg bg-white dark:bg-[#121212]">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <div>
-                            <CardTitle className="text-xl flex items-center gap-2">
-                                <FileCheck className="h-5 w-5 text-primary" />
-                                Document Verification
-                            </CardTitle>
-                            <CardDescription>
-                                Recent user document submissions and their status
-                            </CardDescription>
+                <Card className="border-none shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/20 dark:to-blue-900/20">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                            Total Users
+                        </CardTitle>
+                        <div className="p-2.5 rounded-xl bg-blue-500/20">
+                            <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                         </div>
-                        <Button variant="outline" size="sm" className="hidden sm:flex">
-                            View All
-                        </Button>
                     </CardHeader>
                     <CardContent>
-                        <div className="space-y-4">
-                            {[
-                                { user: 'Alice Johnson', docType: 'Passport', status: 'Verified', date: '2 mins ago', id: 'DOC-001', avatar: 'A', color: 'bg-emerald-100 text-emerald-600' },
-                                { user: 'Bob Smith', docType: 'Driver License', status: 'Pending', date: '15 mins ago', id: 'DOC-002', avatar: 'B', color: 'bg-amber-100 text-amber-600' },
-                                { user: 'Charlie Brown', docType: 'ID Card', status: 'Rejected', date: '1 hour ago', id: 'DOC-003', avatar: 'C', color: 'bg-red-100 text-red-600' },
-                                { user: 'David Wilson', docType: 'Passport', status: 'Verified', date: '2 hours ago', id: 'DOC-004', avatar: 'D', color: 'bg-blue-100 text-blue-600' },
-                                { user: 'Eva Green', docType: 'Utility Bill', status: 'Pending', date: '3 hours ago', id: 'DOC-005', avatar: 'E', color: 'bg-purple-100 text-purple-600' },
-                            ].map((doc, i) => (
-                                <div key={i} className="group flex items-center justify-between p-4 rounded-2xl bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 hover:bg-white dark:hover:bg-gray-800 hover:shadow-md transition-all duration-200">
-                                    <div className="flex items-center gap-4">
-                                        <div className={`h-12 w-12 rounded-full ${doc.color} flex items-center justify-center font-bold text-lg shadow-sm`}>
-                                            {doc.avatar}
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-gray-900 dark:text-white group-hover:text-primary transition-colors">{doc.user}</p>
-                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                <span className="font-mono bg-gray-200 dark:bg-gray-800 px-1.5 py-0.5 rounded text-[10px]">{doc.id}</span>
-                                                <span>•</span>
-                                                <span>{doc.docType}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-col items-end gap-1">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${doc.status === 'Verified' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' :
-                                                doc.status === 'Pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400' :
-                                                    'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400'
-                                            }`}>
-                                            {doc.status === 'Verified' && <CheckCircle2 className="h-3 w-3" />}
-                                            {doc.status === 'Pending' && <Clock className="h-3 w-3" />}
-                                            {doc.status === 'Rejected' && <AlertCircle className="h-3 w-3" />}
-                                            {doc.status}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground">{doc.date}</span>
-                                    </div>
-                                </div>
-                            ))}
+                        <div className="text-3xl font-bold text-blue-900 dark:text-blue-100">{stats.totalUsers}</div>
+                        <div className="flex items-center mt-1">
+                            <ArrowUpRight className="h-3 w-3 mr-1 text-emerald-500" />
+                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">+12.5% from last month</span>
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Recent Activity / Market Overview - Spans 1 column */}
-                <div className="space-y-6">
-                    <Card className="border-none shadow-lg bg-white dark:bg-[#121212]">
-                        <CardHeader>
-                            <CardTitle className="text-lg">Market Overview</CardTitle>
-                            <CardDescription>Top assets today</CardDescription>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                            <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                                {[
-                                    { name: 'Bitcoin', symbol: 'BTC', price: '$43,256.78', change: '+5.2%', icon: '₿', color: 'bg-orange-100 text-orange-600' },
-                                    { name: 'Ethereum', symbol: 'ETH', price: '$2,345.67', change: '+3.8%', icon: 'Ξ', color: 'bg-blue-100 text-blue-600' },
-                                    { name: 'Solana', symbol: 'SOL', price: '$98.45', change: '+12.4%', icon: 'S', color: 'bg-purple-100 text-purple-600' },
-                                    { name: 'Cardano', symbol: 'ADA', price: '$0.56', change: '-1.2%', icon: '₳', color: 'bg-blue-100 text-blue-600' },
-                                ].map((asset, i) => (
-                                    <div key={i} className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                        <div className="flex items-center gap-3">
-                                            <div className={`h-10 w-10 rounded-lg ${asset.color} flex items-center justify-center font-bold`}>
-                                                {asset.icon}
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-sm">{asset.name}</p>
-                                                <p className="text-xs text-muted-foreground">{asset.symbol}</p>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="font-bold text-sm">{asset.price}</p>
-                                            <p className={`text-xs font-medium ${asset.change.startsWith('+') ? 'text-emerald-600' : 'text-red-600'}`}>
-                                                {asset.change}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
+                <Card className="border-none shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/20 dark:to-amber-900/20">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                            Pending Verifications
+                        </CardTitle>
+                        <div className="p-2.5 rounded-xl bg-amber-500/20">
+                            <FileText className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-3xl font-bold text-amber-900 dark:text-amber-100">{stats.pendingVerifications}</div>
+                        <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">Requires review</p>
+                    </CardContent>
+                </Card>
 
-                    <Card className="border-none shadow-lg bg-gradient-to-br from-gray-900 to-gray-800 text-white">
-                        <CardHeader>
-                            <CardTitle className="text-lg text-white">Pro Tips</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                <div className="p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
-                                    <p className="text-sm font-medium">💡 Review pending documents daily to maintain compliance.</p>
-                                </div>
-                                <div className="p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
-                                    <p className="text-sm font-medium">🚀 Bitcoin is trending up! Check the trading volume.</p>
-                                </div>
-                            </div>
-                            <Button className="w-full mt-4 bg-white text-gray-900 hover:bg-gray-100">
-                                View Insights
-                            </Button>
-                        </CardContent>
-                    </Card>
+                <Card className="border-none shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/20 dark:to-emerald-900/20">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-emerald-900 dark:text-emerald-100">
+                            Total Investments
+                        </CardTitle>
+                        <div className="p-2.5 rounded-xl bg-emerald-500/20">
+                            <TrendingUp className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-3xl font-bold text-emerald-900 dark:text-emerald-100">{stats.totalInvestments}</div>
+                        <div className="flex items-center mt-1">
+                            <ArrowUpRight className="h-3 w-3 mr-1 text-emerald-500" />
+                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">+8.2% this week</span>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="border-none shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/20 dark:to-purple-900/20">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-purple-900 dark:text-purple-100">
+                            Pending Payments
+                        </CardTitle>
+                        <div className="p-2.5 rounded-xl bg-purple-500/20">
+                            <DollarSign className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-3xl font-bold text-purple-900 dark:text-purple-100">{stats.pendingPayments}</div>
+                        <p className="text-xs text-purple-700 dark:text-purple-300 mt-1">Awaiting approval</p>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Tabs */}
+            <div className="border-b border-gray-200 dark:border-gray-800">
+                <div className="flex gap-1">
+                    {[
+                        { id: "overview", label: "Overview" },
+                        { id: "users", label: "Users" },
+                        { id: "verifications", label: "Verifications" },
+                        { id: "payments", label: "Payments" },
+                        { id: "investments", label: "Investments" }
+                    ].map((tab) => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id as any)}
+                            className={`px-6 py-3 text-sm font-medium transition-all relative ${activeTab === tab.id
+                                    ? "text-primary"
+                                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                                }`}
+                        >
+                            {tab.label}
+                            {activeTab === tab.id && (
+                                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />
+                            )}
+                        </button>
+                    ))}
                 </div>
             </div>
+
+            {/* Tab Content */}
+            <div>
+                {activeTab === "overview" && <OverviewTab />}
+                {activeTab === "users" && <UsersTab searchQuery={searchQuery} setSearchQuery={setSearchQuery} />}
+                {activeTab === "verifications" && <VerificationsTab />}
+                {activeTab === "payments" && <PaymentsTab />}
+                {activeTab === "investments" && <InvestmentsTab />}
+            </div>
         </div>
+    )
+}
+
+function OverviewTab() {
+    return (
+        <div className="grid gap-6 lg:grid-cols-2">
+            <Card className="border-none shadow-lg">
+                <CardHeader>
+                    <CardTitle>Recent Activity</CardTitle>
+                    <CardDescription>Latest actions on the platform</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        {[
+                            { action: "New user registration", user: "John Doe", email: "john@example.com", time: "2 min ago", icon: Users, color: "text-blue-500" },
+                            { action: "KYC verification submitted", user: "Jane Smith", email: "jane@example.com", time: "15 min ago", icon: FileText, color: "text-amber-500" },
+                            { action: "Payment received", user: "Mike Johnson", amount: "$5,000", time: "1 hour ago", icon: DollarSign, color: "text-emerald-500" },
+                        ].map((activity, i) => (
+                            <div key={i} className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                <div className={`p-2 rounded-lg bg-gray-100 dark:bg-gray-800 ${activity.color}`}>
+                                    <activity.icon className="w-5 h-5" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-medium text-sm">{activity.action}</p>
+                                    <p className="text-xs text-muted-foreground truncate">
+                                        {activity.user} {activity.email && `- ${activity.email}`} {activity.amount}
+                                    </p>
+                                </div>
+                                <span className="text-xs text-muted-foreground whitespace-nowrap">{activity.time}</span>
+                            </div>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card className="border-none shadow-lg">
+                <CardHeader>
+                    <CardTitle>Quick Actions</CardTitle>
+                    <CardDescription>Common administrative tasks</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid gap-3">
+                        <Link href="/admin/verifications">
+                            <Button className="w-full justify-start" variant="outline">
+                                <FileText className="w-4 h-4 mr-2" />
+                                Review Pending Verifications (23)
+                            </Button>
+                        </Link>
+                        <Link href="/admin/payments">
+                            <Button className="w-full justify-start" variant="outline">
+                                <DollarSign className="w-4 h-4 mr-2" />
+                                Approve Payments (15)
+                            </Button>
+                        </Link>
+                        <Link href="/admin/users">
+                            <Button className="w-full justify-start" variant="outline">
+                                <Users className="w-4 h-4 mr-2" />
+                                Manage Users
+                            </Button>
+                        </Link>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    )
+}
+
+function UsersTab({ searchQuery, setSearchQuery }: { searchQuery: string; setSearchQuery: (q: string) => void }) {
+    const users = [
+        { id: 1, name: "John Doe", email: "john@example.com", balance: "$12,500", status: "verified", joinedDate: "2024-01-15" },
+        { id: 2, name: "Jane Smith", email: "jane@example.com", balance: "$8,750", status: "pending", joinedDate: "2024-02-20" },
+        { id: 3, name: "Mike Johnson", email: "mike@example.com", balance: "$25,000", status: "verified", joinedDate: "2024-01-10" },
+        { id: 4, name: "Sarah Williams", email: "sarah@example.com", balance: "$15,300", status: "rejected", joinedDate: "2024-03-05" },
+    ]
+
+    return (
+        <Card className="border-none shadow-lg">
+            <CardHeader>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <CardTitle>All Users</CardTitle>
+                        <CardDescription>Manage and monitor user accounts</CardDescription>
+                    </div>
+                    <div className="flex gap-2">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Search users..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-10 w-64"
+                            />
+                        </div>
+                        <Button variant="outline" size="icon">
+                            <Filter className="w-4 h-4" />
+                        </Button>
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent>
+                <div className="overflow-x-auto">
+                    <table className="w-full">
+                        <thead>
+                            <tr className="border-b border-gray-200 dark:border-gray-800">
+                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">User</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Balance</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Joined</th>
+                                <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {users.map((user) => (
+                                <tr key={user.id} className="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                                    <td className="py-4 px-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-bold">
+                                                {user.name[0]}
+                                            </div>
+                                            <div>
+                                                <p className="font-medium text-sm">{user.name}</p>
+                                                <p className="text-xs text-muted-foreground">{user.email}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="py-4 px-4 font-semibold">{user.balance}</td>
+                                    <td className="py-4 px-4">
+                                        <Badge
+                                            variant={user.status === "verified" ? "default" : user.status === "pending" ? "secondary" : "destructive"}
+                                            className="capitalize"
+                                        >
+                                            {user.status === "verified" && <CheckCircle className="w-3 h-3 mr-1" />}
+                                            {user.status === "pending" && <Clock className="w-3 h-3 mr-1" />}
+                                            {user.status === "rejected" && <XCircle className="w-3 h-3 mr-1" />}
+                                            {user.status}
+                                        </Badge>
+                                    </td>
+                                    <td className="py-4 px-4 text-sm text-muted-foreground">{user.joinedDate}</td>
+                                    <td className="py-4 px-4 text-right">
+                                        <Link href={`/admin/users/${user.id}`}>
+                                            <Button size="sm" variant="ghost">
+                                                View Details
+                                            </Button>
+                                        </Link>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
+
+function VerificationsTab() {
+    const verifications = [
+        { id: 1, userName: "Jane Smith", email: "jane@example.com", submittedDate: "2024-03-15", status: "pending", documents: 5 },
+        { id: 2, userName: "Robert Brown", email: "robert@example.com", submittedDate: "2024-03-14", status: "pending", documents: 5 },
+        { id: 3, userName: "Emily Davis", email: "emily@example.com", submittedDate: "2024-03-13", status: "under_review", documents: 5 },
+    ]
+
+    return (
+        <Card className="border-none shadow-lg">
+            <CardHeader>
+                <CardTitle>Pending Verifications</CardTitle>
+                <CardDescription>Review and approve user KYC documents</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-4">
+                    {verifications.map((verification) => (
+                        <div key={verification.id} className="p-4 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-primary/50 transition-colors">
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white font-bold">
+                                        {verification.userName[0]}
+                                    </div>
+                                    <div>
+                                        <p className="font-medium">{verification.userName}</p>
+                                        <p className="text-sm text-muted-foreground">{verification.email}</p>
+                                    </div>
+                                </div>
+                                <Badge variant="secondary" className="capitalize">
+                                    {verification.status.replace("_", " ")}
+                                </Badge>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <div className="text-sm text-muted-foreground">
+                                    <p>Submitted: {verification.submittedDate}</p>
+                                    <p>Documents: {verification.documents} files</p>
+                                </div>
+                                <Link href={`/admin/verifications/${verification.id}`}>
+                                    <Button size="sm">
+                                        Review Documents
+                                    </Button>
+                                </Link>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
+
+function PaymentsTab() {
+    const payments = [
+        { id: 1, userName: "Mike Johnson", amount: "$5,000", method: "Bank Transfer", status: "pending", date: "2024-03-15 10:30 AM" },
+        { id: 2, userName: "Sarah Williams", amount: "$10,000", method: "Wire Transfer", status: "pending", date: "2024-03-15 09:15 AM" },
+        { id: 3, userName: "John Doe", amount: "$2,500", method: "Bank Transfer", status: "verified", date: "2024-03-14 03:45 PM" },
+    ]
+
+    return (
+        <Card className="border-none shadow-lg">
+            <CardHeader>
+                <CardTitle>Payment Verifications</CardTitle>
+                <CardDescription>Approve or reject payment submissions</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-4">
+                    {payments.map((payment) => (
+                        <div key={payment.id} className="p-4 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-primary/50 transition-colors">
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold">
+                                        {payment.userName[0]}
+                                    </div>
+                                    <div>
+                                        <p className="font-medium">{payment.userName}</p>
+                                        <p className="text-sm text-muted-foreground">{payment.method}</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{payment.amount}</p>
+                                    <Badge variant={payment.status === "verified" ? "default" : "secondary"}>
+                                        {payment.status}
+                                    </Badge>
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <p className="text-xs text-muted-foreground">{payment.date}</p>
+                                {payment.status === "pending" && (
+                                    <Link href={`/admin/payments/${payment.id}`}>
+                                        <Button size="sm">
+                                            Verify Payment
+                                        </Button>
+                                    </Link>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
+
+function InvestmentsTab() {
+    const investments = [
+        { id: 1, userName: "John Doe", asset: "Bitcoin (BTC)", amount: "$15,000", quantity: "0.5 BTC", date: "2024-03-15", status: "active", profit: "+$2,500" },
+        { id: 2, userName: "Mike Johnson", asset: "Ethereum (ETH)", amount: "$8,500", quantity: "3.2 ETH", date: "2024-03-14", status: "active", profit: "+$1,200" },
+        { id: 3, userName: "Jane Smith", asset: "Apple Stock (AAPL)", amount: "$12,000", quantity: "100 shares", date: "2024-03-13", status: "active", profit: "+$4,800" },
+        { id: 4, userName: "Sarah Williams", asset: "Tesla Stock (TSLA)", amount: "$20,000", quantity: "80 shares", date: "2024-03-12", status: "closed", profit: "-$1,500" },
+    ]
+
+    return (
+        <Card className="border-none shadow-lg">
+            <CardHeader>
+                <CardTitle>User Investments</CardTitle>
+                <CardDescription>Track all user investment activities</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="overflow-x-auto">
+                    <table className="w-full">
+                        <thead>
+                            <tr className="border-b border-gray-200 dark:border-gray-800">
+                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">User</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Asset</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Amount</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Quantity</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Profit/Loss</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {investments.map((investment) => (
+                                <tr key={investment.id} className="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                                    <td className="py-4 px-4 font-medium">{investment.userName}</td>
+                                    <td className="py-4 px-4">{investment.asset}</td>
+                                    <td className="py-4 px-4 font-semibold text-emerald-600 dark:text-emerald-400">{investment.amount}</td>
+                                    <td className="py-4 px-4 text-muted-foreground">{investment.quantity}</td>
+                                    <td className="py-4 px-4">
+                                        <span className={investment.profit.startsWith("+") ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-red-600 dark:text-red-400 font-semibold"}>
+                                            {investment.profit}
+                                        </span>
+                                    </td>
+                                    <td className="py-4 px-4">
+                                        <Badge variant={investment.status === "active" ? "default" : "secondary"} className="capitalize">
+                                            {investment.status}
+                                        </Badge>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </CardContent>
+        </Card>
     )
 }
