@@ -2,11 +2,15 @@
 
 import { useState } from "react"
 import { ChevronDown } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Modal } from "@/components/ui/modal"
 
 export default function Settings() {
   const [twoFactorAuth, setTwoFactorAuth] = useState(true)
   const [smsCode, setSmsCode] = useState(true)
   const [otherNotifications, setOtherNotifications] = useState(true)
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 text-white">
@@ -19,9 +23,9 @@ export default function Settings() {
               <button className="px-4 py-1.5 text-sm font-medium text-slate-400 hover:text-white transition">
                 Cancel
               </button>
-              <button className="px-4 py-1.5 bg-emerald-500 text-white rounded text-sm font-medium hover:bg-emerald-500/90 transition">
+              <Button className="bg-emerald-500 text-white hover:bg-emerald-500/90">
                 Save
-              </button>
+              </Button>
             </div>
           </div>
           <p className="text-sm text-slate-400">Quickly update your basic preferences</p>
@@ -44,10 +48,10 @@ export default function Settings() {
             <label className="text-xs text-slate-400 font-medium block mb-2">
               Full name
             </label>
-            <input
+            <Input
               type="text"
               placeholder="John Doe"
-              className="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50"
+              className="bg-white/5 border-white/10 text-white focus-visible:ring-emerald-500/50"
             />
           </div>
 
@@ -56,10 +60,10 @@ export default function Settings() {
             <label className="text-xs text-slate-400 font-medium block mb-2">
               Email
             </label>
-            <input
+            <Input
               type="email"
               placeholder="john@example.com"
-              className="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50"
+              className="bg-white/5 border-white/10 text-white focus-visible:ring-emerald-500/50"
             />
           </div>
 
@@ -93,7 +97,10 @@ export default function Settings() {
               <label className="text-xs text-slate-400 font-medium">
                 Password
               </label>
-              <button className="text-sm text-emerald-400 hover:underline">
+              <button
+                className="text-sm text-emerald-400 hover:underline"
+                onClick={() => setIsPasswordModalOpen(true)}
+              >
                 Change
               </button>
             </div>
@@ -227,11 +234,40 @@ export default function Settings() {
           <button className="px-6 py-2 text-sm font-medium text-slate-400 hover:text-white">
             Set as primary
           </button>
-          <button className="px-6 py-2 bg-emerald-500 text-white rounded text-sm font-medium hover:bg-emerald-500/90 transition">
+          <Button className="bg-emerald-500 text-white hover:bg-emerald-500/90">
             Manage bank accounts
-          </button>
+          </Button>
         </div>
       </div>
+
+      {/* Change Password Modal */}
+      <Modal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+        title="Change Password"
+      >
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-slate-300">Current Password</label>
+            <Input type="password" placeholder="Enter current password" className="bg-slate-900 border-white/10 text-white" />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-slate-300">New Password</label>
+            <Input type="password" placeholder="Enter new password" className="bg-slate-900 border-white/10 text-white" />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-slate-300">Confirm New Password</label>
+            <Input type="password" placeholder="Confirm new password" className="bg-slate-900 border-white/10 text-white" />
+          </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="ghost" onClick={() => setIsPasswordModalOpen(false)}>Cancel</Button>
+            <Button className="bg-emerald-500 hover:bg-emerald-600 text-white" onClick={() => {
+              alert("Password changed successfully!");
+              setIsPasswordModalOpen(false);
+            }}>Update Password</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

@@ -1,15 +1,20 @@
 'use client'
 
 import { useState } from "react"
-import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
-import { CreditCard, CheckCircle, TrendingUp, TrendingDown, ArrowUpRight, Bell, Settings, RefreshCcw } from "lucide-react"
-
-// Dynamically import Chart with SSR disabled to avoid "window is not defined" error
-const Chart = dynamic(() => import("react-apexcharts"), { ssr: false })
+import { Input } from "@/components/ui/input"
+import { Modal } from "@/components/ui/modal"
+import { StatCard } from "@/components/ui/StatCard"
+import { RecentActivityTable } from "@/components/dashboard/RecentActivityTable"
+import { Watchlist } from "@/components/dashboard/Watchlist"
+import { Notifications } from "@/components/dashboard/Notifications"
+import { ChartCard } from "@/components/dashboard/ChartCard"
+import { CreditCard, TrendingUp, Bell, RefreshCcw } from "lucide-react"
 
 export default function Trading() {
-  const [showDropdown, setShowDropdown] = useState(false)
+  const [isKYCModalOpen, setIsKYCModalOpen] = useState(false)
+  const [isWatchlistModalOpen, setIsWatchlistModalOpen] = useState(false)
+  const [newWatchlistSymbol, setNewWatchlistSymbol] = useState("")
 
   // Panel data
   const notifications = [
@@ -22,11 +27,18 @@ export default function Trading() {
     { date: "Oct 25, 2023", type: "SELL", asset: "ETH", amount: "$2,150.75", status: "Completed" },
     { date: "Oct 24, 2023", type: "DEPOSIT", asset: "USD", amount: "$10,000.00", status: "Completed" },
   ]
-  const watchlist = [
+  const [watchlist, setWatchlist] = useState([
     { symbol: "SOL", name: "Solana", price: "$145.23", change: "-2.15%" },
     { symbol: "ADA", name: "Cardano", price: "$0.45", change: "+1.80%" },
     { symbol: "DOGE", name: "Dogecoin", price: "$0.15", change: "+5.52%" },
-  ]
+  ])
+
+  const handleAddWatchlist = () => {
+    if (!newWatchlistSymbol) return
+    setWatchlist([...watchlist, { symbol: newWatchlistSymbol.toUpperCase(), name: "Custom Asset", price: "$0.00", change: "+0.00%" }])
+    setNewWatchlistSymbol("")
+    setIsWatchlistModalOpen(false)
+  }
 
   // Enhanced Chart configs with modern styling
   const lineChartOptions = {
@@ -97,10 +109,7 @@ export default function Trading() {
   const verificationPending = notifications.some(n => n.message.toLowerCase().includes("verification") && !n.done);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950
-">
-
-
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950">
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Welcome Header with Stats */}
         <div className="mb-8">
@@ -111,7 +120,7 @@ export default function Trading() {
             </div>
             <div className="flex items-center gap-2 mt-4 md:mt-0">
               <span className="text-xs text-slate-500">Last updated: 2 min ago</span>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white">
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white" onClick={() => window.location.reload()}>
                 <RefreshCcw className="w-4 h-4" />
               </Button>
             </div>
@@ -119,66 +128,37 @@ export default function Trading() {
 
           {/* Enhanced Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="relative overflow-hidden  rounded-2xl p-6 shadow-xl hover:shadow-emerald-500/10 transition-all group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 transition-all"></div>
-              <div className="relative">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <p className="text-sm text-slate-400 mb-1">Total Balance</p>
-                    <h3 className="text-3xl font-bold text-white">$12,500</h3>
-                  </div>
-                  <div className="p-3 bg-emerald-500/10 rounded-xl">
-                    <TrendingUp className="w-5 h-5 text-emerald-400" />
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-emerald-400 text-sm font-semibold flex items-center">
-                    <ArrowUpRight className="w-4 h-4" />
-                    +12.5%
-                  </span>
-                  <span className="text-slate-500 text-xs">vs last month</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="relative overflow-hidden  border border-white/5 rounded-2xl p-6 shadow-xl hover:shadow-blue-500/10 transition-all group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all"></div>
-              <div className="relative">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <p className="text-sm text-slate-400 mb-1">Recent Deposits</p>
-                    <h3 className="text-3xl font-bold text-white">$2,700</h3>
-                  </div>
-                  <div className="p-3 bg-blue-500/10 rounded-xl">
-                    <CreditCard className="w-5 h-5 text-blue-400" />
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-blue-400 text-sm font-semibold">3 transactions</span>
-                  <span className="text-slate-500 text-xs">this week</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="relative overflow-hidden  border border-white/5 rounded-2xl p-6 shadow-xl hover:shadow-amber-500/10 transition-all group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl group-hover:bg-amber-500/20 transition-all"></div>
-              <div className="relative">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <p className="text-sm text-slate-400 mb-1">Pending Actions</p>
-                    <h3 className="text-3xl font-bold text-white">{verificationPending ? "1" : "0"}</h3>
-                  </div>
-                  <div className="p-3 bg-amber-500/10 rounded-xl">
-                    <Bell className="w-5 h-5 text-amber-400" />
-                  </div>
-                </div>
-                {verificationPending && (
-                  <Button size="sm" className="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 w-full">
-                    Complete KYC
-                  </Button>
-                )}
-              </div>
-            </div>
+            <StatCard
+              label="Total Balance"
+              value="$12,500"
+              change="+12.5%"
+              isPositive={true}
+              subtext="vs last month"
+              icon={TrendingUp}
+              color="emerald"
+            />
+            <StatCard
+              label="Recent Deposits"
+              value="$2,700"
+              subtext="3 transactions this week"
+              icon={CreditCard}
+              color="blue"
+            />
+            <StatCard
+              label="Pending Actions"
+              value={verificationPending ? "1" : "0"}
+              icon={Bell}
+              color="amber"
+              action={verificationPending && (
+                <Button
+                  size="sm"
+                  className="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 w-full"
+                  onClick={() => setIsKYCModalOpen(true)}
+                >
+                  Complete KYC
+                </Button>
+              )}
+            />
           </div>
         </div>
 
@@ -186,168 +166,101 @@ export default function Trading() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left Sidebar - Notifications & Watchlist */}
           <div className="lg:col-span-4 space-y-6">
-            {/* Notifications Card */}
-            <div className=" border border-white/5 rounded-2xl p-6 shadow-xl">
-              <div className="flex items-center justify-between mb-5">
-                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                  <Bell className="w-5 h-5 text-emerald-400" />
-                  Notifications
-                </h3>
-                {verificationPending && (
-                  <span className="px-2 py-1 bg-amber-500/20 text-amber-400 text-xs font-medium rounded-full">
-                    Action Required
-                  </span>
-                )}
-              </div>
-              <div className="space-y-3">
-                {notifications.map(note => (
-                  <div
-                    key={note.id}
-                    className={`p-4 rounded-xl border transition-all hover:scale-[1.02] ${note.done
-                      ? "bg-slate-800/30 border-white/5"
-                      : "bg-amber-500/5 border-amber-500/20"
-                      }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`mt-0.5 ${note.done ? "text-emerald-400" : "text-amber-400"}`}>
-                        {note.done ? (
-                          <CheckCircle className="w-5 h-5" />
-                        ) : (
-                          <Bell className="w-5 h-5" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <p className={`text-sm ${note.done ? "text-slate-400" : "text-white font-medium"}`}>
-                          {note.message}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Enhanced Watchlist */}
-            <div className=" border border-white/5 rounded-2xl p-6 shadow-xl">
-              <div className="flex items-center justify-between mb-5">
-                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-emerald-400" />
-                  Watchlist
-                </h3>
-                <Button variant="ghost" size="sm" className="text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 text-xs">
-                  + Add
-                </Button>
-              </div>
-              <div className="space-y-3">
-                {watchlist.map((coin) => (
-                  <div
-                    key={coin.symbol}
-                    className="p-4 bg-slate-800/30 hover:bg-slate-800/50 border border-white/5 rounded-xl transition-all cursor-pointer group"
-                  >
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center">
-                          <span className="font-bold text-sm text-emerald-400">{coin.symbol.slice(0, 2)}</span>
-                        </div>
-                        <div>
-                          <p className="font-bold text-white group-hover:text-emerald-400 transition">{coin.symbol}</p>
-                          <p className="text-xs text-slate-500">{coin.name}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-white">{coin.price}</p>
-                        <span className={`text-xs font-semibold flex items-center justify-end gap-1 ${coin.change.startsWith('-') ? 'text-red-400' : 'text-emerald-400'
-                          }`}>
-                          {coin.change.startsWith('-') ? <TrendingDown className="w-3 h-3" /> : <TrendingUp className="w-3 h-3" />}
-                          {coin.change}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <Notifications notifications={notifications} actionRequired={verificationPending} />
+            <Watchlist items={watchlist} onAdd={() => setIsWatchlistModalOpen(true)} />
           </div>
 
           {/* Right Content - Charts & Activity */}
           <div className="lg:col-span-8 space-y-6">
             {/* Charts Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className=" border border-white/5 rounded-2xl p-6 shadow-xl">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold text-white">Portfolio Performance</h3>
-                  <div className="flex gap-1">
+              <ChartCard
+                title="Portfolio Performance"
+                options={lineChartOptions}
+                series={lineChartSeries}
+                type="area"
+                actions={
+                  <>
                     <button className="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-lg text-xs font-medium">1M</button>
                     <button className="px-3 py-1 text-slate-400 hover:bg-white/5 rounded-lg text-xs">3M</button>
                     <button className="px-3 py-1 text-slate-400 hover:bg-white/5 rounded-lg text-xs">1Y</button>
-                  </div>
-                </div>
-                <Chart options={lineChartOptions} series={lineChartSeries} type="area" height={250} />
-              </div>
-
-              <div className=" border border-white/5 rounded-2xl p-6 shadow-xl">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold text-white">Deposit Activity</h3>
-                  <div className="flex gap-1">
+                  </>
+                }
+              />
+              <ChartCard
+                title="Deposit Activity"
+                options={barChartOptions}
+                series={barChartSeries}
+                type="bar"
+                actions={
+                  <>
                     <button className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg text-xs font-medium">1M</button>
                     <button className="px-3 py-1 text-slate-400 hover:bg-white/5 rounded-lg text-xs">3M</button>
                     <button className="px-3 py-1 text-slate-400 hover:bg-white/5 rounded-lg text-xs">1Y</button>
-                  </div>
-                </div>
-                <Chart options={barChartOptions} series={barChartSeries} type="bar" height={250} />
-              </div>
+                  </>
+                }
+              />
             </div>
 
             {/* Activity Table */}
-            <div className=" border border-white/5 rounded-2xl p-6 shadow-xl">
-              <div className="flex justify-between items-center mb-5">
-                <h3 className="text-lg font-semibold text-white">Recent Activity</h3>
-                <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white text-xs">
-                  View All →
-                </Button>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="text-slate-500 text-xs font-medium border-b border-white/5">
-                      <th className="text-left py-3 px-4">DATE</th>
-                      <th className="text-left py-3 px-4">TYPE</th>
-                      <th className="text-left py-3 px-4">ASSET</th>
-                      <th className="text-right py-3 px-4">AMOUNT</th>
-                      <th className="text-right py-3 px-4">STATUS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {activities.map((row, idx) => (
-                      <tr key={idx} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                        <td className="py-4 px-4 text-slate-400 text-sm">{row.date}</td>
-                        <td className="py-4 px-4">
-                          <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold ${row.type === 'BUY'
-                            ? "bg-emerald-500/10 text-emerald-400"
-                            : row.type === 'SELL'
-                              ? "bg-red-500/10 text-red-400"
-                              : "bg-blue-500/10 text-blue-400"
-                            }`}>
-                            {row.type}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 font-semibold text-white">{row.asset}</td>
-                        <td className="py-4 px-4 text-right font-semibold text-white">{row.amount}</td>
-                        <td className="py-4 px-4 text-right">
-                          <span className="inline-flex items-center gap-1 text-emerald-400 text-sm">
-                            <CheckCircle className="w-4 h-4" />
-                            {row.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <RecentActivityTable activities={activities} onViewAll={() => alert("Navigating to all activities...")} />
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <Modal
+        isOpen={isKYCModalOpen}
+        onClose={() => setIsKYCModalOpen(false)}
+        title="Complete KYC Verification"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-400">Please upload your identification documents to complete the verification process.</p>
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-slate-300">Document Type</label>
+            <select className="w-full bg-slate-900 border border-white/10 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
+              <option>Passport</option>
+              <option>National ID</option>
+              <option>Driver's License</option>
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-slate-300">Upload File</label>
+            <div className="border-2 border-dashed border-white/10 rounded-lg p-8 text-center hover:border-emerald-500/50 transition-colors cursor-pointer">
+              <p className="text-sm text-slate-400">Click to upload or drag and drop</p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="ghost" onClick={() => setIsKYCModalOpen(false)}>Cancel</Button>
+            <Button className="bg-emerald-500 hover:bg-emerald-600 text-white" onClick={() => {
+              alert("Documents submitted for review!");
+              setIsKYCModalOpen(false);
+            }}>Submit</Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isWatchlistModalOpen}
+        onClose={() => setIsWatchlistModalOpen(false)}
+        title="Add to Watchlist"
+      >
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-slate-300">Asset Symbol</label>
+            <Input
+              placeholder="e.g. BTC, ETH, AAPL"
+              value={newWatchlistSymbol}
+              onChange={(e) => setNewWatchlistSymbol(e.target.value)}
+              className="bg-slate-900 border-white/10 text-white"
+            />
+          </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="ghost" onClick={() => setIsWatchlistModalOpen(false)}>Cancel</Button>
+            <Button className="bg-emerald-500 hover:bg-emerald-600 text-white" onClick={handleAddWatchlist}>Add Asset</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

@@ -1,13 +1,21 @@
 'use client'
 
 import { useState } from "react"
-import Chart from "react-apexcharts"
+import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
-import { ChevronDown, TrendingUp, TrendingDown } from "lucide-react"
+import { Modal } from "@/components/ui/modal"
+import { Input } from "@/components/ui/input"
+import { SummaryCard } from "@/components/dashboard/SummaryCard"
+import { PositionsTable } from "@/components/dashboard/PositionsTable"
+import { AllocationCard } from "@/components/dashboard/AllocationCard"
+import { Props as ChartProps } from "react-apexcharts"
+
+const Chart = dynamic(() => import("react-apexcharts"), { ssr: false })
 
 export default function PortfolioDashboard() {
     const [activeTab, setActiveTab] = useState("All Assets")
     const [chartType, setChartType] = useState("1D")
+    const [isDepositModalOpen, setIsDepositModalOpen] = useState(false)
 
     // Portfolio summary data
     const portfolioStats = {
@@ -60,7 +68,7 @@ export default function PortfolioDashboard() {
     ]
 
     // Chart configuration
-    const chartOptions = {
+    const chartOptions: ChartProps["options"] = {
         chart: {
             id: "btc-chart",
             toolbar: {
@@ -78,7 +86,7 @@ export default function PortfolioDashboard() {
             foreColor: '#9ca3af'
         },
         xaxis: {
-            type: 'datetime' as const,
+            type: 'datetime',
             labels: {
                 style: { colors: "#6b7280", fontSize: '10px' }
             },
@@ -96,7 +104,7 @@ export default function PortfolioDashboard() {
             strokeDashArray: 2
         },
         stroke: {
-            curve: 'smooth' as const,
+            curve: 'smooth',
             width: 2
         },
         colors: ['#ef4444'],
@@ -150,29 +158,22 @@ export default function PortfolioDashboard() {
         <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 text-white p-6">
             <div className="max-w-[1600px] mx-auto">
                 {/* Header */}
-                <div className="mb-6">
-                    <h1 className="text-2xl font-bold mb-1 text-white">Portfolio</h1>
-                    <p className="text-sm text-slate-400">Overview of Bitcoin, across Stocks, Forex, and Crypto</p>
+                <div className="mb-6 flex justify-between items-end">
+                    <div>
+                        <h1 className="text-2xl font-bold mb-1 text-white">Portfolio</h1>
+                        <p className="text-sm text-slate-400">Overview of Bitcoin, across Stocks, Forex, and Crypto</p>
+                    </div>
+                    <Button className="bg-emerald-500 hover:bg-emerald-600 text-white" onClick={() => setIsDepositModalOpen(true)}>
+                        Deposit Funds
+                    </Button>
                 </div>
 
                 {/* Portfolio Summary Cards */}
                 <div className="grid grid-cols-4 gap-4 mb-6">
-                    <div className="bg-transparent rounded-lg border border-white/5 p-4">
-                        <div className="text-xs text-slate-400 mb-1">Total Value</div>
-                        <div className="text-2xl font-bold text-white">{portfolioStats.totalValue}</div>
-                    </div>
-                    <div className="bg-transparent rounded-lg border border-white/5 p-4">
-                        <div className="text-xs text-slate-400 mb-1">Cash (USD)</div>
-                        <div className="text-2xl font-bold text-white">{portfolioStats.cashUSD}</div>
-                    </div>
-                    <div className="bg-transparent rounded-lg border border-white/5 p-4">
-                        <div className="text-xs text-slate-400 mb-1">Total P/L</div>
-                        <div className="text-2xl font-bold text-emerald-400">{portfolioStats.totalPL}</div>
-                    </div>
-                    <div className="bg-transparent rounded-lg border border-white/5 p-4">
-                        <div className="text-xs text-slate-400 mb-1">BTC Ledger</div>
-                        <div className="text-2xl font-bold text-emerald-400">{portfolioStats.btcLedger}</div>
-                    </div>
+                    <SummaryCard label="Total Value" value={portfolioStats.totalValue} />
+                    <SummaryCard label="Cash (USD)" value={portfolioStats.cashUSD} />
+                    <SummaryCard label="Total P/L" value={portfolioStats.totalPL} valueColor="text-emerald-400" />
+                    <SummaryCard label="BTC Ledger" value={portfolioStats.btcLedger} valueColor="text-emerald-400" />
                 </div>
 
                 {/* Main Content Grid */}
@@ -247,83 +248,13 @@ export default function PortfolioDashboard() {
                         </div>
 
                         {/* Positions Table */}
-                        <div className="bg-transparent rounded-lg border border-white/5 p-5">
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-lg font-bold text-white">Positions</h2>
-                                <button className="px-4 py-1.5 rounded bg-white/5 text-slate-400 text-xs font-medium hover:bg-white/10 hover:text-white">
-                                    Group by Asset class
-                                </button>
-                            </div>
-
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-xs">
-                                    <thead>
-                                        <tr className="border-b border-white/10 text-slate-400">
-                                            <th className="text-left py-3 px-3 font-semibold">Symbol</th>
-                                            <th className="text-left py-3 px-3 font-semibold">Name / type</th>
-                                            <th className="text-left py-3 px-3 font-semibold">Qty</th>
-                                            <th className="text-left py-3 px-3 font-semibold">Avg. price / Rebalance</th>
-                                            <th className="text-left py-3 px-3 font-semibold">Last / Delta</th>
-                                            <th className="text-left py-3 px-3 font-semibold">P/L (Real / Unreal)</th>
-                                            <th className="text-left py-3 px-3 font-semibold">Value / Trades</th>
-                                            <th className="text-left py-3 px-3 font-semibold">Action / Weight</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {positions.map((pos, idx) => (
-                                            <tr key={idx} className="border-b border-white/5 hover:bg-white/5">
-                                                <td className="py-3 px-3 font-semibold text-white">{pos.symbol}</td>
-                                                <td className="py-3 px-3 text-slate-400">{pos.name}</td>
-                                                <td className="py-3 px-3 text-slate-300">{pos.qty}</td>
-                                                <td className="py-3 px-3 text-slate-300">{pos.price}</td>
-                                                <td className="py-3 px-3 text-emerald-400">{pos.value}</td>
-                                                <td className="py-3 px-3 text-slate-300">{pos.pl}</td>
-                                                <td className="py-3 px-3 font-medium text-slate-300">{pos.roi}</td>
-                                                <td className={`py-3 px-3 font-medium ${pos.action.includes('-') ? 'text-red-400' :
-                                                    pos.action === '0%' || pos.action === '0.4%' ? 'text-slate-400' : 'text-emerald-400'
-                                                    }`}>
-                                                    {pos.action}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <div className="text-xs text-slate-500 mt-3">
-                                By default, Positions by GGOS symbol | Portfolio data displayed in this table dates back to the 1950s to the current date, sources: www.company.com
-                            </div>
-                        </div>
+                        <PositionsTable positions={positions} />
                     </div>
 
                     {/* Right Column - Allocation & Risk */}
                     <div className="col-span-4">
                         {/* Allocation Section */}
-                        <div className="bg-transparent rounded-lg border border-white/5 p-5 mb-6">
-                            <h2 className="text-lg font-bold mb-4 text-white">Allocation</h2>
-                            <div className="text-xs text-slate-400 mb-3">Current breakdown</div>
-
-                            {allocations.map((item, idx) => (
-                                <div key={idx} className="mb-4">
-                                    <div className="flex items-center justify-between mb-1">
-                                        <span className="text-sm font-medium text-white">{item.name}</span>
-                                        <span className="text-sm font-bold text-white">{item.percent}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden mr-3">
-                                            <div
-                                                className={`h-full ${idx === 0 ? 'bg-orange-500' :
-                                                    idx === 1 ? 'bg-blue-500' :
-                                                        idx === 2 ? 'bg-purple-500' : 'bg-slate-400'
-                                                    }`}
-                                                style={{ width: item.percent }}
-                                            ></div>
-                                        </div>
-                                        <span className="text-xs text-slate-400">{item.value}</span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                        <AllocationCard allocations={allocations} />
 
                         {/* Risk & Insurance Section */}
                         <div className="bg-transparent rounded-lg border border-white/5 p-5 mb-6">
@@ -383,6 +314,36 @@ export default function PortfolioDashboard() {
                     </div>
                 </div>
             </div>
+
+            {/* Deposit Modal */}
+            <Modal
+                isOpen={isDepositModalOpen}
+                onClose={() => setIsDepositModalOpen(false)}
+                title="Deposit Funds"
+            >
+                <div className="space-y-4">
+                    <p className="text-sm text-slate-400">Add funds to your portfolio securely.</p>
+                    <div className="space-y-2">
+                        <label className="text-xs font-medium text-slate-300">Amount (USD)</label>
+                        <Input placeholder="0.00" className="bg-slate-900 border-white/10 text-white" />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs font-medium text-slate-300">Payment Method</label>
+                        <select className="w-full bg-slate-900 border border-white/10 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
+                            <option>Bank Transfer</option>
+                            <option>Credit Card</option>
+                            <option>Crypto Deposit</option>
+                        </select>
+                    </div>
+                    <div className="flex justify-end gap-2 mt-4">
+                        <Button variant="ghost" onClick={() => setIsDepositModalOpen(false)}>Cancel</Button>
+                        <Button className="bg-emerald-500 hover:bg-emerald-600 text-white" onClick={() => {
+                            alert("Deposit initiated!");
+                            setIsDepositModalOpen(false);
+                        }}>Proceed to Payment</Button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     )
 }

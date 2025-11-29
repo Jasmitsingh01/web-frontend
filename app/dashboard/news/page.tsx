@@ -1,11 +1,15 @@
 'use client'
 
 import { useState } from "react"
-import Link from "next/link"
-import { ChevronDown, ChevronRight } from "lucide-react"
+import { NewsCard } from "@/components/dashboard/NewsCard"
+import { TrendingStocks } from "@/components/dashboard/TrendingStocks"
+import { EconomicCalendar } from "@/components/dashboard/EconomicCalendar"
+import { Modal } from "@/components/ui/modal"
+import { Button } from "@/components/ui/button"
 
 export default function MarketNews() {
     const [selectedCategories, setSelectedCategories] = useState<string[]>(["All Assets"])
+    const [isPersonalizeModalOpen, setIsPersonalizeModalOpen] = useState(false)
 
     // News articles data
     const newsArticles = [
@@ -95,8 +99,7 @@ export default function MarketNews() {
     ]
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950
- text-white">
+        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 text-white">
             <div className="max-w-[1600px] mx-auto p-6">
                 {/* Header */}
                 <div className="mb-6">
@@ -138,47 +141,7 @@ export default function MarketNews() {
                         {/* News Articles List */}
                         <div className="space-y-4">
                             {newsArticles.map((article, idx) => (
-                                <div key={idx} className="border-b border-white/10 pb-4">
-                                    <div className="flex items-start justify-between mb-2">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <span className="text-xs font-semibold text-white bg-white/10 px-2 py-0.5 rounded">
-                                                    {article.category}
-                                                </span>
-                                                <span className="text-xs text-slate-400">{article.source}</span>
-                                                <span className="text-xs text-slate-400">• {article.time}</span>
-                                            </div>
-                                            <Link href={`/dashboard/news/${article.slug}`}>
-                                                <h3 className="text-base font-bold mb-2 text-white hover:text-emerald-400 cursor-pointer transition">
-                                                    {article.title}
-                                                </h3>
-                                            </Link>
-                                            <p className="text-sm text-slate-400 leading-relaxed mb-3">
-                                                {article.description}
-                                            </p>
-                                            <div className="flex items-center gap-2">
-                                                {article.tags.map((tag, tagIdx) => (
-                                                    <span key={tagIdx} className="text-xs text-slate-300 bg-white/5 px-2 py-1 rounded">
-                                                        {tag}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <div className="text-xs text-slate-500 ml-4 whitespace-nowrap">
-                                            {idx === 0 && "13:03, Nov 12"}
-                                            {idx === 1 && "07:20, Nov 11"}
-                                            {idx === 2 && "12:14, Nov 8"}
-                                            {idx === 3 && "18:11, Nov 6"}
-                                            {idx === 4 && "CBOE + Free daily"}
-                                            {idx === 5 && "Bloomberg • 12h ago"}
-                                        </div>
-                                    </div>
-                                    {article.reactions && (
-                                        <div className="flex items-center gap-3 mt-2">
-                                            <span className="text-xs text-slate-500">Reactions: 4 Smiling • 3 Cool</span>
-                                        </div>
-                                    )}
-                                </div>
+                                <NewsCard key={idx} article={article} />
                             ))}
                         </div>
 
@@ -199,9 +162,12 @@ export default function MarketNews() {
                         <div className="sticky top-6">
                             {/* Filter Header */}
                             <div className="mb-4 pb-3 border-b border-white/10">
-                                <button className="px-4 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-medium w-full hover:bg-emerald-500/90 transition">
+                                <Button
+                                    className="w-full bg-emerald-500 text-white hover:bg-emerald-500/90 text-xs font-medium"
+                                    onClick={() => setIsPersonalizeModalOpen(true)}
+                                >
                                     Personalize feeds
-                                </button>
+                                </Button>
                             </div>
 
                             {/* Filter by asset and region */}
@@ -258,60 +224,10 @@ export default function MarketNews() {
                     <div className="col-span-2">
                         <div className="sticky top-6 space-y-6">
                             {/* Trending Stocks */}
-                            <div className="border border-white/10 rounded-lg p-4 bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm">
-                                <div className="flex items-center justify-between mb-3">
-                                    <h3 className="text-sm font-bold text-white">Trending Stocks</h3>
-                                    <button className="px-2 py-1 bg-white/5 text-slate-300 rounded text-xs font-medium hover:bg-white/10 hover:text-white transition">
-                                        See all
-                                    </button>
-                                </div>
-                                <p className="text-xs text-slate-400 mb-3">Most discussed by the community</p>
-
-                                <div className="space-y-2">
-                                    {trendingStocks.map((stock, idx) => (
-                                        <div key={idx} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
-                                            <div>
-                                                <div className="text-sm font-semibold text-white">{stock.symbol}</div>
-                                                <div className="text-xs text-slate-400">{stock.name}</div>
-                                            </div>
-                                            <div className="text-right">
-                                                <div className="text-sm font-medium text-slate-300">{stock.price}</div>
-                                                <div className={`text-xs font-medium ${stock.change.startsWith('+') ? 'text-emerald-400' : 'text-red-400'
-                                                    }`}>
-                                                    {stock.change}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
+                            <TrendingStocks stocks={trendingStocks} onSeeAll={() => alert("View all trending stocks")} />
 
                             {/* Economic Calendar */}
-                            <div className="border border-white/10 rounded-lg p-4 bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm">
-                                <h3 className="text-sm font-bold mb-3 text-white">Economic calendar (Today)</h3>
-                                <p className="text-xs text-slate-400 mb-3">Upcoming key market-moving releases</p>
-
-                                <div className="space-y-3">
-                                    {economicEvents.map((event, idx) => (
-                                        <div key={idx} className="pb-3 border-b border-white/5 last:border-0">
-                                            <div className="flex items-start justify-between mb-1">
-                                                <div className="text-xs font-medium text-slate-300">{event.event}</div>
-                                                <div className={`text-xs font-semibold px-2 py-0.5 rounded ${event.impact === 'high'
-                                                    ? 'bg-red-500/20 text-red-400'
-                                                    : 'bg-yellow-500/20 text-yellow-400'
-                                                    }`}>
-                                                    {event.impact}
-                                                </div>
-                                            </div>
-                                            <div className="text-xs text-slate-500">{event.time}</div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <button className="w-full mt-3 text-xs text-emerald-400 hover:underline text-left">
-                                    Event history shown in your dashboard
-                                </button>
-                            </div>
+                            <EconomicCalendar events={economicEvents} />
 
                             {/* Scroll Articles */}
                             <div className="border border-white/10 rounded-lg p-4 bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm">
@@ -333,6 +249,34 @@ export default function MarketNews() {
                     </div>
                 </div>
             </div>
+
+            {/* Personalize Modal */}
+            <Modal
+                isOpen={isPersonalizeModalOpen}
+                onClose={() => setIsPersonalizeModalOpen(false)}
+                title="Personalize Your Feed"
+            >
+                <div className="space-y-4">
+                    <p className="text-sm text-slate-400">Select topics and regions to customize your news feed.</p>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-white">Topics</label>
+                        <div className="flex flex-wrap gap-2">
+                            {["Technology", "Finance", "Crypto", "Energy", "Healthcare"].map(topic => (
+                                <button key={topic} className="px-3 py-1 bg-white/5 hover:bg-emerald-500/20 hover:text-emerald-400 rounded-full text-xs text-slate-300 transition">
+                                    {topic}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="flex justify-end gap-2 mt-4">
+                        <Button variant="ghost" onClick={() => setIsPersonalizeModalOpen(false)}>Cancel</Button>
+                        <Button className="bg-emerald-500 hover:bg-emerald-600 text-white" onClick={() => {
+                            alert("Preferences saved!");
+                            setIsPersonalizeModalOpen(false);
+                        }}>Save Preferences</Button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     )
 }
