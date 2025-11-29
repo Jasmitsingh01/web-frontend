@@ -9,7 +9,7 @@ export default function Settings() {
   const [otherNotifications, setOtherNotifications] = useState(true)
 
   return (
-    <div className="min-h-screenbg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 text-white">
       <div className="max-w-[800px] mx-auto p-6">
         {/* Header */}
         <div className="mb-6">

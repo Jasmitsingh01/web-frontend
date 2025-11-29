@@ -44,7 +44,7 @@ export default function Wallet() {
     }
 
     return (
-        <div className="min-h-screenbg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 text-white">
+        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 text-white">
             <div className="max-w-[1200px] mx-auto p-6">
                 {/* Header */}
                 <div className="mb-6">
@@ -67,7 +67,7 @@ export default function Wallet() {
                     {/* Left Column */}
                     <div className="col-span-8 space-y-6">
                         {/* Wallet Overview */}
-                        <div className="bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm border border-white/10 rounded-lg p-6">
+                        <div className="bg-transparent border border-white/10 rounded-lg p-6">
                             <h2 className="text-lg font-bold mb-4 text-white">Wallet overview</h2>
                             <p className="text-xs text-slate-400 mb-4">Available balances and holdings</p>
 
@@ -99,7 +99,7 @@ export default function Wallet() {
                         </div>
 
                         {/* Transfer Funds */}
-                        <div className="bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm border border-white/10 rounded-lg p-6">
+                        <div className="bg-transparent border border-white/10 rounded-lg p-6">
                             <h2 className="text-lg font-bold mb-4 text-white">Transfer funds</h2>
                             <p className="text-xs text-slate-400 mb-4">Easily move balances to your main account</p>
 
@@ -128,7 +128,7 @@ export default function Wallet() {
                                         <input
                                             type="text"
                                             placeholder="0.00"
-                                            className="w-full bg-white/5 border border-white/10 rounded px-8 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50"
+                                            className="w-full bg-transparent border border-white/10 rounded px-8 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50"
                                         />
                                     </div>
                                 </div>
@@ -157,7 +157,7 @@ export default function Wallet() {
                         </div>
 
                         {/* Account Holder Details */}
-                        <div className="bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm border border-white/10 rounded-lg p-6">
+                        <div className="bg-transparent border border-white/10 rounded-lg p-6">
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-lg font-bold text-white">Account holder details</h2>
                                 <button className="text-xs text-emerald-400 hover:underline">Edit</button>
@@ -197,7 +197,7 @@ export default function Wallet() {
                         </div>
 
                         {/* QR Code Transfers */}
-                        <div className="bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm border border-white/10 rounded-lg p-6">
+                        <div className="bg-transparent border border-white/10 rounded-lg p-6">
                             <h2 className="text-lg font-bold mb-4 text-white">QR (QR) Transfers</h2>
 
                             <div className="grid grid-cols-2 gap-6">
@@ -228,7 +228,7 @@ export default function Wallet() {
                         </div>
 
                         {/* External Transfer Available */}
-                        <div className="bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm border border-white/10 rounded-lg p-6">
+                        <div className="bg-transparent border border-white/10 rounded-lg p-6">
                             <h2 className="text-lg font-bold mb-2 text-white">External transfer (Available)</h2>
                             <p className="text-xs text-slate-400 mb-4">
                                 Currently in markets that's used is enabled
@@ -251,7 +251,7 @@ export default function Wallet() {
                         </div>
 
                         {/* Recent Activity */}
-                        <div className="bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm border border-white/10 rounded-lg p-6">
+                        <div className="bg-transparent border border-white/10 rounded-lg p-6">
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-lg font-bold text-white">Recent activity</h2>
                                 <button className="px-3 py-1 bg-white/5 text-slate-300 rounded text-xs font-medium hover:bg-white/10 hover:text-white transition">
@@ -280,7 +280,7 @@ export default function Wallet() {
                     {/* Right Column */}
                     <div className="col-span-4 space-y-6">
                         {/* Gift Cards */}
-                        <div className="bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm border border-white/10 rounded-lg p-5">
+                        <div className="bg-transparent border border-white/10 rounded-lg p-5">
                             <div className="flex items-center justify-between mb-3">
                                 <h3 className="text-sm font-bold text-white">Gift cards</h3>
                                 <button className="text-xs text-emerald-400 hover:underline">View all</button>
@@ -307,7 +307,7 @@ export default function Wallet() {
                         </div>
 
                         {/* Trading Limits */}
-                        <div className="bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm border border-white/10 rounded-lg p-5">
+                        <div className="bg-transparent border border-white/10 rounded-lg p-5">
                             <h3 className="text-sm font-bold mb-3 text-white">Limits</h3>
                             <p className="text-xs text-slate-400 mb-4">Your current trading limits</p>
 
@@ -340,24 +340,10 @@ export default function Wallet() {
                             </button>
                         </div>
 
-                        {/* Badges */}
-                        <div className="bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm border border-white/10 rounded-lg p-5">
-                            <h3 className="text-sm font-bold mb-3 text-white">Badges</h3>
-                            <p className="text-xs text-slate-400 mb-4">Your earned achievements</p>
 
-                            <div className="grid grid-cols-3 gap-3">
-                                {[1, 2, 3, 4, 5, 6].map((badge) => (
-                                    <div key={badge} className="aspect-square bg-white/5 rounded-lg border border-white/10 hover:border-white/20 cursor-pointer transition"></div>
-                                ))}
-                            </div>
-
-                            <button className="w-full mt-3 text-xs text-emerald-400 hover:underline text-center">
-                                View all badges
-                            </button>
-                        </div>
 
                         {/* Notifications & Alerts */}
-                        <div className="bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm border border-white/10 rounded-lg p-5">
+                        <div className="bg-transparent backdrop-blur-sm border border-white/10 rounded-lg p-5">
                             <h3 className="text-sm font-bold mb-3 text-white">Notifications & Alerts</h3>
 
                             <div className="space-y-2">
