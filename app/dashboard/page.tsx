@@ -1,9 +1,12 @@
 'use client'
 
 import { useState } from "react"
-import Chart from "react-apexcharts"
+import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
 import { CreditCard, CheckCircle, TrendingUp, TrendingDown, ArrowUpRight, Bell, Settings, RefreshCcw } from "lucide-react"
+
+// Dynamically import Chart with SSR disabled to avoid "window is not defined" error
+const Chart = dynamic(() => import("react-apexcharts"), { ssr: false })
 
 export default function Trading() {
   const [showDropdown, setShowDropdown] = useState(false)
@@ -27,15 +30,15 @@ export default function Trading() {
 
   // Enhanced Chart configs with modern styling
   const lineChartOptions = {
-    chart: { 
-      id: "line-chart", 
-      toolbar: { show: false }, 
-      zoom: { enabled: false }, 
+    chart: {
+      id: "line-chart",
+      toolbar: { show: false },
+      zoom: { enabled: false },
       background: 'transparent',
       sparkline: { enabled: false }
     },
-    xaxis: { 
-      categories: ["Jan", "Feb", "Mar", "Apr", "May"], 
+    xaxis: {
+      categories: ["Jan", "Feb", "Mar", "Apr", "May"],
       labels: { style: { colors: "#94a3b8", fontSize: '12px' } },
       axisBorder: { show: false },
       axisTicks: { show: false }
@@ -62,16 +65,16 @@ export default function Trading() {
     }
   }
   const lineChartSeries = [{ name: "Portfolio Value", data: [100, 200, 300, 400, 500] }]
-  
+
   const barChartOptions = {
-    chart: { 
-      id: "bar-chart", 
-      toolbar: { show: false }, 
-      zoom: { enabled: false }, 
-      background: 'transparent' 
+    chart: {
+      id: "bar-chart",
+      toolbar: { show: false },
+      zoom: { enabled: false },
+      background: 'transparent'
     },
-    xaxis: { 
-      categories: ["Jan", "Feb", "Mar", "Apr", "May"], 
+    xaxis: {
+      categories: ["Jan", "Feb", "Mar", "Apr", "May"],
       labels: { style: { colors: "#94a3b8", fontSize: '12px' } },
       axisBorder: { show: false },
       axisTicks: { show: false }
@@ -226,11 +229,10 @@ export default function Trading() {
                 {notifications.map(note => (
                   <div
                     key={note.id}
-                    className={`p-4 rounded-xl border transition-all hover:scale-[1.02] ${
-                      note.done 
-                        ? "bg-slate-800/30 border-white/5" 
+                    className={`p-4 rounded-xl border transition-all hover:scale-[1.02] ${note.done
+                        ? "bg-slate-800/30 border-white/5"
                         : "bg-amber-500/5 border-amber-500/20"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-start gap-3">
                       <div className={`mt-0.5 ${note.done ? "text-emerald-400" : "text-amber-400"}`}>
@@ -264,8 +266,8 @@ export default function Trading() {
               </div>
               <div className="space-y-3">
                 {watchlist.map((coin) => (
-                  <div 
-                    key={coin.symbol} 
+                  <div
+                    key={coin.symbol}
                     className="p-4 bg-slate-800/30 hover:bg-slate-800/50 border border-white/5 rounded-xl transition-all cursor-pointer group"
                   >
                     <div className="flex justify-between items-center">
@@ -280,9 +282,8 @@ export default function Trading() {
                       </div>
                       <div className="text-right">
                         <p className="font-semibold text-white">{coin.price}</p>
-                        <span className={`text-xs font-semibold flex items-center justify-end gap-1 ${
-                          coin.change.startsWith('-') ? 'text-red-400' : 'text-emerald-400'
-                        }`}>
+                        <span className={`text-xs font-semibold flex items-center justify-end gap-1 ${coin.change.startsWith('-') ? 'text-red-400' : 'text-emerald-400'
+                          }`}>
                           {coin.change.startsWith('-') ? <TrendingDown className="w-3 h-3" /> : <TrendingUp className="w-3 h-3" />}
                           {coin.change}
                         </span>
@@ -347,13 +348,12 @@ export default function Trading() {
                       <tr key={idx} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                         <td className="py-4 px-4 text-slate-400 text-sm">{row.date}</td>
                         <td className="py-4 px-4">
-                          <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold ${
-                            row.type === 'BUY' 
-                              ? "bg-emerald-500/10 text-emerald-400" 
-                              : row.type === 'SELL' 
-                              ? "bg-red-500/10 text-red-400" 
-                              : "bg-blue-500/10 text-blue-400"
-                          }`}>
+                          <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold ${row.type === 'BUY'
+                              ? "bg-emerald-500/10 text-emerald-400"
+                              : row.type === 'SELL'
+                                ? "bg-red-500/10 text-red-400"
+                                : "bg-blue-500/10 text-blue-400"
+                            }`}>
                             {row.type}
                           </span>
                         </td>
