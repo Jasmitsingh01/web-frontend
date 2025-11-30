@@ -127,10 +127,11 @@ export default function OpenAccountPage() {
 
             const data = await response.json()
 
-            if (data.success) {
-                // In production, you would create the user account here
-                // For now, just redirect to admin
-                window.location.href = '/admin'
+            if (data.success && data.token) {
+                // Store token in localStorage
+                localStorage.setItem('authToken', data.token)
+                // Redirect to dashboard
+                window.location.href = '/dashboard'
                 return true
             }
             return false

@@ -105,8 +105,11 @@ export default function LoginPage() {
 
             const data = await response.json()
 
-            if (data.success) {
-                window.location.href = '/admin'
+            if (data.success && data.token) {
+                // Store token in localStorage
+                localStorage.setItem('authToken', data.token)
+                // Redirect to dashboard
+                window.location.href = '/dashboard'
                 return true
             }
             return false

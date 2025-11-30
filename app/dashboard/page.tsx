@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,34 +11,87 @@ import { Watchlist } from "@/components/dashboard/Watchlist"
 import { Notifications } from "@/components/dashboard/Notifications"
 import { ChartCard } from "@/components/dashboard/ChartCard"
 import { CreditCard, TrendingUp, Bell, RefreshCcw } from "lucide-react"
+import { api } from "@/lib/api"
 
 export default function Trading() {
   const [isKYCModalOpen, setIsKYCModalOpen] = useState(false)
   const [isWatchlistModalOpen, setIsWatchlistModalOpen] = useState(false)
   const [newWatchlistSymbol, setNewWatchlistSymbol] = useState("")
+  const [newWatchlistType, setNewWatchlistType] = useState<"cryptocurrency" | "stock" | "forex" | "commodity">("cryptocurrency")
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState("")
 
-  // Panel data
-  const notifications = [
-    { id: 1, message: "KYC verification is pending.", done: false },
-    { id: 2, message: "Deposit of $1,000 completed.", done: true },
-    { id: 3, message: "Auto-withdrawal setup successful.", done: true },
-  ]
-  const activities = [
-    { date: "Oct 26, 2023", type: "BUY", asset: "BTC", amount: "$5,000.00", status: "Completed" },
-    { date: "Oct 25, 2023", type: "SELL", asset: "ETH", amount: "$2,150.75", status: "Completed" },
-    { date: "Oct 24, 2023", type: "DEPOSIT", asset: "USD", amount: "$10,000.00", status: "Completed" },
-  ]
-  const [watchlist, setWatchlist] = useState([
-    { symbol: "SOL", name: "Solana", price: "$145.23", change: "-2.15%" },
-    { symbol: "ADA", name: "Cardano", price: "$0.45", change: "+1.80%" },
-    { symbol: "DOGE", name: "Dogecoin", price: "$0.15", change: "+5.52%" },
-  ])
+  // Dynamic data from API
+  const [dashboardData, setDashboardData] = useState<any>(null)
+  const [token, setToken] = useState<string | null>(null)
 
-  const handleAddWatchlist = () => {
-    if (!newWatchlistSymbol) return
-    setWatchlist([...watchlist, { symbol: newWatchlistSymbol.toUpperCase(), name: "Custom Asset", price: "$0.00", change: "+0.00%" }])
-    setNewWatchlistSymbol("")
-    setIsWatchlistModalOpen(false)
+  // Load token from localStorage
+  useEffect(() => {
+    const storedToken = localStorage.getItem('authToken')
+    if (storedToken) {
+      setToken(storedToken)
+    } else {
+      // Redirect to login if no token
+      window.location.href = '/auth/login'
+    }
+  }, [])
+
+  // Fetch dashboard data
+  useEffect(() => {
+    if (!token) return
+
+    const fetchDashboardData = async () => {
+      try {
+        setIsLoading(true)
+        const result = await api.dashboard.getData(token)
+        setDashboardData(result.dashboard)
+        setError("")
+      } catch (err: any) {
+        console.error('Error fetching dashboard data:', err)
+        setError(err.message || 'Failed to load dashboard data')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchDashboardData()
+  }, [token])
+
+  const handleAddWatchlist = async () => {
+    if (!newWatchlistSymbol || !token) return
+
+    try {
+      await api.watchlist.add(token, {
+        symbol: newWatchlistSymbol.toUpperCase(),
+        assetType: newWatchlistType,
+        alertPrice: undefined,
+        notes: ""
+      })
+
+      // Refresh dashboard data
+      const result = await api.dashboard.getData(token)
+      setDashboardData(result.dashboard)
+
+      setNewWatchlistSymbol("")
+      setIsWatchlistModalOpen(false)
+    } catch (err: any) {
+      console.error('Error adding to watchlist:', err)
+      alert(err.message || 'Failed to add to watchlist')
+    }
+  }
+
+  const handleRefresh = async () => {
+    if (!token) return
+
+    try {
+      setIsLoading(true)
+      const result = await api.dashboard.getData(token)
+      setDashboardData(result.dashboard)
+    } catch (err: any) {
+      console.error('Error refreshing data:', err)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   // Enhanced Chart configs with modern styling
@@ -77,7 +130,6 @@ export default function Trading() {
       }
     }
   }
-  const lineChartSeries = [{ name: "Portfolio Value", data: [100, 200, 300, 400, 500] }]
 
   const barChartOptions = {
     chart: {
@@ -106,8 +158,58 @@ export default function Trading() {
     },
     dataLabels: { enabled: false },
   }
-  const barChartSeries = [{ name: "Deposits", data: [500, 700, 400, 900, 600] }]
-  const verificationPending = notifications.some(n => n.message.toLowerCase().includes("verification") && !n.done);
+
+  if (isLoading && !dashboardData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 flex items-center justify-center">
+        <div className="text-white text-xl">Loading dashboard...</div>
+      </div>
+    )
+  }
+
+  if (error && !dashboardData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 flex items-center justify-center">
+        <div className="text-red-400 text-xl">{error}</div>
+      </div>
+    )
+  }
+
+  const balance = dashboardData?.balance || { total: 0, change: "+0%", recentDeposits: 0 }
+  const activities = dashboardData?.activities || []
+  const notifications = dashboardData?.notifications || []
+  const watchlist = dashboardData?.watchlist || []
+  const pendingActions = dashboardData?.pendingActions || 0
+  const charts = dashboardData?.charts || { portfolioPerformance: [100, 200, 300, 400, 500], depositActivity: [500, 700, 400, 900, 600] }
+
+  const lineChartSeries = [{ name: "Portfolio Value", data: charts.portfolioPerformance }]
+  const barChartSeries = [{ name: "Deposits", data: charts.depositActivity }]
+
+  const verificationPending = notifications.some((n: any) => n.message?.toLowerCase().includes("verification") && !n.isDone)
+
+  // Format activities for the table
+  const formattedActivities = activities.map((activity: any) => ({
+    date: new Date(activity.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    type: activity.type.toUpperCase(),
+    asset: activity.currency || 'USD',
+    amount: `$${activity.amount.toFixed(2)}`,
+    status: activity.status.charAt(0).toUpperCase() + activity.status.slice(1)
+  }))
+
+  // Format notifications
+  const formattedNotifications = notifications.map((notif: any) => ({
+    id: notif.id,
+    message: notif.message,
+    done: notif.isDone
+  }))
+
+  // Format watchlist
+  const formattedWatchlist = watchlist.map((item: any) => ({
+    symbol: item.symbol,
+    name: item.symbol,
+    price: "$0.00", // You can integrate real market data here
+    change: "+0.00%"
+  }))
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950">
@@ -116,13 +218,19 @@ export default function Trading() {
         <div className="mb-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
             <div>
-              <h2 className="text-3xl font-bold text-white mb-1">Welcome back, John 👋</h2>
+              <h2 className="text-3xl font-bold text-white mb-1">Welcome back 👋</h2>
               <p className="text-slate-400 text-sm">Here's what's happening with your portfolio today</p>
             </div>
             <div className="flex items-center gap-2 mt-4 md:mt-0">
-              <span className="text-xs text-slate-500">Last updated: 2 min ago</span>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white" onClick={() => window.location.reload()}>
-                <RefreshCcw className="w-4 h-4" />
+              <span className="text-xs text-slate-500">Last updated: just now</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-slate-400 hover:text-white"
+                onClick={handleRefresh}
+                disabled={isLoading}
+              >
+                <RefreshCcw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
               </Button>
             </div>
           </div>
@@ -131,23 +239,23 @@ export default function Trading() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <StatCard
               label="Total Balance"
-              value="$12,500"
-              change="+12.5%"
-              isPositive={true}
+              value={`$${balance.total.toFixed(2)}`}
+              change={balance.change}
+              isPositive={balance.change.includes('+')}
               subtext="vs last month"
               icon={TrendingUp}
               color="emerald"
             />
             <StatCard
               label="Recent Deposits"
-              value="$2,700"
-              subtext="3 transactions this week"
+              value={`$${balance.recentDeposits.toFixed(2)}`}
+              subtext={`${activities.filter((a: any) => a.type === 'deposit').length} transactions this week`}
               icon={CreditCard}
               color="blue"
             />
             <StatCard
               label="Pending Actions"
-              value={verificationPending ? "1" : "0"}
+              value={pendingActions.toString()}
               icon={Bell}
               color="amber"
               action={verificationPending && (
@@ -167,8 +275,8 @@ export default function Trading() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left Sidebar - Notifications & Watchlist */}
           <div className="lg:col-span-4 space-y-6">
-            <Notifications notifications={notifications} actionRequired={verificationPending} />
-            <Watchlist items={watchlist} onAdd={() => setIsWatchlistModalOpen(true)} />
+            <Notifications notifications={formattedNotifications} actionRequired={verificationPending} />
+            <Watchlist items={formattedWatchlist} onAdd={() => setIsWatchlistModalOpen(true)} />
           </div>
 
           {/* Right Content - Charts & Activity */}
@@ -204,7 +312,7 @@ export default function Trading() {
             </div>
 
             {/* Activity Table */}
-            <RecentActivityTable activities={activities} onViewAll={() => alert("Navigating to all activities...")} />
+            <RecentActivityTable activities={formattedActivities} onViewAll={() => window.location.href = '/dashboard/wallet'} />
           </div>
         </div>
       </div>
@@ -256,6 +364,19 @@ export default function Trading() {
               onChange={(e) => setNewWatchlistSymbol(e.target.value)}
               className="bg-slate-900 border-white/10 text-white"
             />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-slate-300">Asset Type</label>
+            <select
+              value={newWatchlistType}
+              onChange={(e) => setNewWatchlistType(e.target.value as any)}
+              className="w-full bg-slate-900 border border-white/10 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+            >
+              <option value="cryptocurrency">Cryptocurrency</option>
+              <option value="stock">Stock</option>
+              <option value="forex">Forex</option>
+              <option value="commodity">Commodity</option>
+            </select>
           </div>
           <div className="flex justify-end gap-2 mt-4">
             <Button variant="ghost" onClick={() => setIsWatchlistModalOpen(false)}>Cancel</Button>
