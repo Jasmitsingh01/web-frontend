@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { verifyOTP } from '@/lib/otp'
-import { verifyOTP as verifyOTPRedis } from '@/lib/redis'
+import { api } from '@/lib/api'
 
 export async function POST(request: Request) {
     try {
@@ -13,35 +12,27 @@ export async function POST(request: Request) {
             )
         }
 
-        let isValid = false
-        let errorMsg = 'Invalid OTP'
+        // Call GraphQL backend to verify OTP
+        const result = await api.auth.verifyOTP(identifier, code);
 
-        // Verify OTP (Try Redis first, fallback to memory)
-        if (process.env.REDIS_URL) {
-            const result = await verifyOTPRedis(identifier, code)
-            isValid = result.valid
-            if (result.error) errorMsg = result.error
-        } else {
-            const result = verifyOTP(identifier, code)
-            isValid = result.valid
-            if (result.error) errorMsg = result.error
-        }
-
-        if (isValid) {
-            // In a real app, you would create a session here
-            // For now, we just return success
-            return NextResponse.json({ success: true })
+        if (result.verifyOTP.success) {
+            // Return success with token
+            return NextResponse.json({
+                success: true,
+                token: result.verifyOTP.token,
+                user: result.verifyOTP.user
+            })
         } else {
             return NextResponse.json(
-                { success: false, message: errorMsg },
+                { success: false, message: result.verifyOTP.message || 'Invalid OTP' },
                 { status: 400 }
             )
         }
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error verifying OTP:', error)
         return NextResponse.json(
-            { success: false, message: 'Internal server error' },
+            { success: false, message: error.message || 'Internal server error' },
             { status: 500 }
         )
     }
