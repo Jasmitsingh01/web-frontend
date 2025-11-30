@@ -1,347 +1,390 @@
-'use client'
-
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { Mail, User, Lock, ArrowRight } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { OTPVerification } from '@/components/auth/OTPVerification'
-import { signIn } from 'next-auth/react'
-import { detectInputType } from '@/lib/validators'
-import type { VerificationStep } from '@/types/auth'
-
-export default function OpenAccountPage() {
-    const [name, setName] = useState('')
-    const [identifier, setIdentifier] = useState('')
-    const [password, setPassword] = useState('')
-    const [step, setStep] = useState<VerificationStep>('input')
-    const [inputType, setInputType] = useState<'email' | 'phone'>('email')
-    const [isLoading, setIsLoading] = useState(false)
-    const [error, setError] = useState('')
-    const [agreedToTerms, setAgreedToTerms] = useState(false)
-    const [showPassword, setShowPassword] = useState(false)
-
-    // Detect input type when identifier changes
-    useEffect(() => {
-        if (identifier.trim()) {
-            const type = detectInputType(identifier)
-            if (type === 'email') {
-                setShowPassword(true)
-                setInputType('email')
-            } else if (type === 'phone') {
-                setShowPassword(false)
-                setInputType('phone')
-            } else {
-                setShowPassword(false)
-            }
-        } else {
-            setShowPassword(false)
+setIsLoading(false)
         }
-    }, [identifier])
+    }
 
-    const handlePasswordSignup = async () => {
+const handleVerifyEmail = async () => {
+    if (!emailOtp) {
+        setError('Please enter email OTP')
+        return
+    }
+    try {
+        const result = await api.auth.verifyOTP(email, emailOtp)
+        if (result.data?.verificationToken) {
+            setVerificationToken(result.data.verificationToken)
+            setEmailVerified(true)
+            setError('')
+            return true
+        }
+        setError('Invalid email OTP')
+        return false
+    } catch (err: any) {
+        setError(err.message || 'Failed to verify email OTP')
+        return false
+    }
+}
+
+const handleVerifyPhone = async () => {
+    if (!phoneOtp) {
+        setError('Please enter phone OTP')
+        return
+    }
+    if (!confirmationResult) {
+        setError('Please resend OTP')
+        return
+    }
+    try {
+        await confirmationResult.confirm(phoneOtp)
+        setPhoneVerified(true)
         setError('')
-
-        if (!name.trim()) {
-            setError('Please enter your name')
-            return
-        }
-
-        if (!identifier || !password) {
-            setError('Please enter email and password')
-            return
-        }
-
-        if (!agreedToTerms) {
-            setError('Please agree to the terms and conditions')
-            return
-        }
-
-        setIsLoading(true)
-
-        try {
-            // In production, implement actual email/password account creation
-            // For now, just show a message
-            setTimeout(() => {
-                setError('Email/password signup not yet implemented. Please use OTP.')
-                setIsLoading(false)
-            }, 1000)
-        } catch (err) {
-            setError('Signup failed. Please try again.')
-            setIsLoading(false)
-        }
+        return true
+    } catch (err: any) {
+        setError('Invalid phone OTP')
+        return false
     }
+}
 
-    const handleSendOTP = async () => {
-        setError('')
-
-        if (!name.trim()) {
-            setError('Please enter your name')
-            return
-        }
-
-        if (!agreedToTerms) {
-            setError('Please agree to the terms and conditions')
-            return
-        }
-
-        const type = detectInputType(identifier)
-        if (type === 'unknown') {
-            setError('Please enter a valid email or phone number')
-            return
-        }
-
-        setIsLoading(true)
-        setInputType(type)
-
-        try {
-            const response = await fetch('/api/auth/send-otp', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ identifier }),
-            })
-
-            const data = await response.json()
-
-            if (data.success) {
-                setStep('verify')
-            } else {
-                setError(data.message || 'Failed to send OTP')
-            }
-        } catch (err) {
-            setError('Failed to send OTP. Please try again.')
-        } finally {
-            setIsLoading(false)
-        }
+const handleAddressSubmit = () => {
+    if (!address || !city || !state || !country || !pincode) {
+        setError('Please fill in all address fields')
+        return
     }
+    setStep('documents')
+}
 
-    const handleVerifyOTP = async (otp: string): Promise<boolean> => {
-        try {
-            const response = await fetch('/api/auth/verify-otp', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ identifier, code: otp }),
-            })
-
-            const data = await response.json()
-
-            if (data.success && data.token) {
-                // Store token in localStorage
-                localStorage.setItem('authToken', data.token)
-                // Redirect to dashboard
-                window.location.href = '/dashboard'
-                return true
-            }
-            return false
-        } catch (err) {
-            return false
-        }
+const handleDocumentsSubmit = () => {
+    if (!addressProof || !bankProof || !identityFront || !identityBack || !selfie) {
+        setError('Please upload all required documents')
+        return
     }
+    setStep('avatar')
+}
 
-    const handleResendOTP = async () => {
-        await handleSendOTP()
+const handleFinalSubmit = async () => {
+    if (!avatar) {
+        setError('Please upload a profile picture')
+        return
     }
+    setIsLoading(true)
+    setError('')
 
-    const handleGoogleSignIn = async () => {
-        await signIn('google', { callbackUrl: '/admin' })
+    try {
+        const formData = new FormData()
+        formData.append('fullname', fullname)
+        formData.append('email', email)
+        formData.append('password', password)
+        formData.append('mobileNumber', `${countryCode}${phone}`)
+
+        formData.append('Address', address)
+        formData.append('Address1', address1)
+        formData.append('city', city)
+        formData.append('state', state)
+        formData.append('country', country)
+        formData.append('pincode', pincode)
+
+        formData.append('verificationToken', verificationToken)
+
+        if (avatar) formData.append('avatar', avatar)
+        if (addressProof) formData.append('AddressProof', addressProof)
+        if (bankProof) formData.append('BankProof', bankProof)
+        if (otherProof) formData.append('OtherProof', otherProof)
+        if (identityFront) formData.append('IdentityFront', identityFront)
+        if (identityBack) formData.append('IdentityBack', identityBack)
+        if (selfie) formData.append('SelfieWithID', selfie)
+
+        await api.auth.register(formData)
+
+        // Redirect to login
+        window.location.href = '/auth/login'
+    } catch (err: any) {
+        setError(err.message || 'Registration failed')
+    } finally {
+        setIsLoading(false)
     }
+}
 
-    if (step === 'verify') {
-        return (
-            <div className="min-h-screen flex items-center justify-center p-8 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-purple-500/5 to-pink-500/5" />
-                <div className="absolute top-20 left-20 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-pulse" />
-                <div className="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
-
-                <div className="relative z-10">
-                    <OTPVerification
-                        identifier={identifier}
-                        type={inputType}
-                        onVerify={handleVerifyOTP}
-                        onBack={() => setStep('input')}
-                        onResend={handleResendOTP}
-                    />
-                </div>
-            </div>
-        )
-    }
-
-    return (
-        <div className="min-h-screen flex">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-purple-500/5 to-pink-500/5" />
-
-            <div className="flex-1 flex items-center justify-center relative overflow-hidden">
-                <div className="absolute top-20 left-20 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-pulse" />
-                <div className="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
-
-                <div className="relative w-full max-w-md z-10">
-                    <Card className="shadow-2xl border-2">
-                        <CardHeader className="space-y-1 text-center">
-                            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                                Open Account
-                            </CardTitle>
-                            <CardDescription className="text-base">
-                                Start your trading journey today
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {/* Google Sign Up */}
-                            <Button
-                                onClick={handleGoogleSignIn}
-                                variant="outline"
-                                className="w-full h-11 text-base hover:scale-[1.02] transition-transform"
-                                type="button"
-                            >
-                                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                                </svg>
-                                Sign up with Google
-                            </Button>
-
-                            <div className="relative">
-                                <div className="relative flex justify-center text-xs uppercase">
-                                    <span className="bg-background px-2 text-muted-foreground">
-                                        Or continue with {showPassword ? 'email' : 'email/phone'}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* Name Input */}
-                            <div className="space-y-2">
-                                <Label htmlFor="name">Full Name</Label>
-                                <div className="relative">
-                                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                    <Input
-                                        id="name"
-                                        type="text"
-                                        placeholder="John Doe"
-                                        value={name}
-                                        onChange={(e) => setName(e.target.value)}
-                                        className="pl-10 h-11"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Email/Phone Input */}
-                            <div className="space-y-2">
-                                <Label htmlFor="identifier">Email or Phone Number</Label>
-                                <div className="relative">
-                                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                    <Input
-                                        id="identifier"
-                                        type="text"
-                                        placeholder="name@example.com or +1234567890"
-                                        value={identifier}
-                                        onChange={(e) => setIdentifier(e.target.value)}
-                                        className="pl-10 h-11"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Password Field (only for email) */}
-                            {showPassword && (
-                                <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                                    <Label htmlFor="password">Password</Label>
-                                    <div className="relative">
-                                        <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                        <Input
-                                            id="password"
-                                            type="password"
-                                            placeholder="••••••••"
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            className="pl-10 h-11"
-                                        />
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">
-                                        Must be at least 8 characters
-                                    </p>
-                                </div>
-                            )}
-
-                            {/* Terms Checkbox */}
-                            <div className="flex items-start space-x-2">
-                                <input
-                                    type="checkbox"
-                                    id="terms"
-                                    checked={agreedToTerms}
-                                    onChange={(e) => setAgreedToTerms(e.target.checked)}
-                                    className="mt-1 rounded border-gray-300"
-                                />
-                                <label htmlFor="terms" className="text-sm leading-none">
-                                    I agree to the{' '}
-                                    <Link href="/terms" className="text-primary hover:underline">
-                                        Terms of Service
-                                    </Link>{' '}
-                                    and{' '}
-                                    <Link href="/privacy" className="text-primary hover:underline">
-                                        Privacy Policy
-                                    </Link>
-                                </label>
-                            </div>
-
-                            {error && (
-                                <p className="text-sm text-destructive animate-shake">{error}</p>
-                            )}
-
-                            {/* Signup Buttons */}
-                            {showPassword ? (
-                                <div className="space-y-2">
-                                    <Button
-                                        onClick={handlePasswordSignup}
-                                        className="w-full h-11 border-2 border-primary text-base group"
-                                        disabled={isLoading || !name || !identifier || !password || !agreedToTerms}
-                                    >
-                                        {isLoading ? (
-                                            'Creating Account...'
-                                        ) : (
-                                            <>
-                                                Create Account with Password
-                                                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                                            </>
-                                        )}
-                                    </Button>
-                                    <Button
-                                        onClick={handleSendOTP}
-                                        variant="outline"
-                                        className="w-full h-11 text-base"
-                                        disabled={isLoading || !name || !identifier || !agreedToTerms}
-                                    >
-                                        Or verify with OTP instead
-                                    </Button>
-                                </div>
-                            ) : (
-                                <Button
-                                    onClick={handleSendOTP}
-                                    className="w-full h-11 border-2 border-primary text-base group"
-                                    disabled={isLoading || !name || !identifier || !agreedToTerms}
-                                >
-                                    {isLoading ? (
-                                        'Sending OTP...'
-                                    ) : (
-                                        <>
-                                            Create Account
-                                            <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                                        </>
-                                    )}
-                                </Button>
-                            )}
-
-                            <p className="text-center text-sm text-muted-foreground">
-                                Already have an account?{' '}
-                                <Link href="/auth/login" className="text-primary font-medium hover:underline">
-                                    Sign in
-                                </Link>
-                            </p>
-                        </CardContent>
-                    </Card>
-                </div>
+const FileUpload = ({ label, file, setFile }: { label: string, file: File | null, setFile: (f: File | null) => void }) => (
+    <div className="space-y-2">
+        <Label className="text-slate-300">{label}</Label>
+        <div className="border-2 border-dashed border-slate-700 rounded-lg p-4 hover:border-emerald-500/50 transition-colors cursor-pointer relative">
+            <input
+                type="file"
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+                accept="image/*,.pdf"
+            />
+            <div className="flex items-center justify-center space-x-2 text-slate-400">
+                {file ? (
+                    <>
+                        <CheckCircle className="w-5 h-5 text-emerald-500" />
+                        <span className="text-emerald-500">{file.name}</span>
+                    </>
+                ) : (
+                    <>
+                        <Upload className="w-5 h-5" />
+                        <span>Click to upload</span>
+                    </>
+                )}
             </div>
         </div>
-    )
+    </div>
+)
+
+return (
+    <div className="min-h-screen flex bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 py-10">
+        {/* Hidden reCAPTCHA container */}
+        <div id="recaptcha-container"></div>
+
+        <div className="flex-1 flex items-center justify-center relative overflow-hidden p-6">
+            <div className="absolute top-20 left-20 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute bottom-20 right-20 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl animate-pulse delay-1000" />
+
+            <div className="relative w-full max-w-2xl z-50">
+                <Card className="shadow-2xl border border-white/10 bg-black/40 backdrop-blur-xl">
+                    <CardHeader className="space-y-1 text-center">
+                        <CardTitle className="text-3xl font-bold text-white">
+                            {step === 'personal' && 'Create Account'}
+                            {step === 'verify' && 'Verify Contact Details'}
+                            {step === 'address' && 'Address Details'}
+                            {step === 'documents' && 'Upload Documents'}
+                            {step === 'avatar' && 'Profile Picture'}
+                        </CardTitle>
+                        <CardDescription className="text-slate-400 text-base">
+                            Step {step === 'personal' ? 1 : step === 'verify' ? 2 : step === 'address' ? 3 : step === 'documents' ? 4 : 5} of 5
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        {error && (
+                            <p className="text-sm text-red-400 bg-red-500/10 p-2 rounded border border-red-500/20 text-center">{error}</p>
+                        )}
+
+                        {step === 'personal' && (
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="fullname" className="text-slate-300">Full Name</Label>
+                                    <Input
+                                        id="fullname"
+                                        name="fullname"
+                                        value={fullname}
+                                        onChange={e => setFullname(e.target.value)}
+                                        className="bg-slate-900/50 border-white/10 text-white focus:border-emerald-500/50 focus:ring-emerald-500/20"
+                                        placeholder="Enter your full name"
+                                        autoComplete="name"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="email" className="text-slate-300">Email</Label>
+                                        <Input
+                                            id="email"
+                                            name="email"
+                                            type="email"
+                                            value={email}
+                                            onChange={e => setEmail(e.target.value)}
+                                            className="bg-slate-900/50 border-white/10 text-white focus:border-emerald-500/50 focus:ring-emerald-500/20"
+                                            placeholder="Enter your email"
+                                            autoComplete="email"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="phone" className="text-slate-300">Phone</Label>
+                                        <div className="flex gap-2">
+                                            <div className="relative w-24">
+                                                <select
+                                                    value={countryCode}
+                                                    onChange={(e) => setCountryCode(e.target.value)}
+                                                    className="w-full h-10 bg-slate-900/50 border border-white/10 rounded-md text-white px-2 appearance-none focus:border-emerald-500/50 focus:ring-emerald-500/20 outline-none"
+                                                >
+                                                    {['+1', '+44', '+91', '+61', '+81', '+86', '+49', '+33'].map(code => (
+                                                        <option key={code} value={code} className="bg-slate-900 text-white">{code}</option>
+                                                    ))}
+                                                </select>
+                                                <ChevronDown className="absolute right-2 top-3 h-4 w-4 text-slate-400 pointer-events-none" />
+                                            </div>
+                                            <Input
+                                                id="phone"
+                                                name="phone"
+                                                type="tel"
+                                                value={phone}
+                                                onChange={e => {
+                                                    const val = e.target.value.replace(/[^0-9]/g, '');
+                                                    setPhone(val);
+                                                }}
+                                                className="flex-1 bg-slate-900/50 border-white/10 text-white focus:border-emerald-500/50 focus:ring-emerald-500/20"
+                                                placeholder="Phone number"
+                                                autoComplete="tel"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="password" className="text-slate-300">Password</Label>
+                                    <div className="relative">
+                                        <Input
+                                            id="password"
+                                            name="password"
+                                            type={showPassword ? "text" : "password"}
+                                            value={password}
+                                            onChange={e => setPassword(e.target.value)}
+                                            className="bg-slate-900/50 border-white/10 text-white focus:border-emerald-500/50 focus:ring-emerald-500/20 pr-10"
+                                            placeholder="Create a password"
+                                            autoComplete="new-password"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-3 text-slate-400 hover:text-white"
+                                        >
+                                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                        </button>
+                                    </div>
+                                </div>
+                                <Button onClick={handleSendOTP} disabled={isLoading} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white">
+                                    {isLoading ? 'Sending OTPs...' : 'Next'}
+                                </Button>
+                            </div>
+                        )}
+
+                        {step === 'verify' && (
+                            <div className="space-y-6">
+                                {/* Email Verification */}
+                                <div className="space-y-4">
+                                    <Label className="text-slate-300">Verify Email ({email})</Label>
+                                    {emailVerified ? (
+                                        <div className="flex items-center text-emerald-500"><CheckCircle className="mr-2" /> Verified</div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            <Input
+                                                type="text"
+                                                value={emailOtp}
+                                                onChange={e => setEmailOtp(e.target.value)}
+                                                placeholder="Enter 6-digit code"
+                                                className="bg-slate-900/50 border-white/10 text-white text-center text-2xl tracking-widest"
+                                                maxLength={6}
+                                            />
+                                            <Button onClick={handleVerifyEmail} className="w-full bg-emerald-500 hover:bg-emerald-600">
+                                                Verify Email
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Phone Verification */}
+                                <div className="space-y-4">
+                                    <Label className="text-slate-300">Verify Phone ({countryCode}{phone})</Label>
+                                    {phoneVerified ? (
+                                        <div className="flex items-center text-emerald-500"><CheckCircle className="mr-2" /> Verified</div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            <Input
+                                                type="text"
+                                                value={phoneOtp}
+                                                onChange={e => setPhoneOtp(e.target.value)}
+                                                placeholder="Enter 6-digit code from SMS"
+                                                className="bg-slate-900/50 border-white/10 text-white text-center text-2xl tracking-widest"
+                                                maxLength={6}
+                                            />
+                                            <Button onClick={handleVerifyPhone} className="w-full bg-emerald-500 hover:bg-emerald-600">
+                                                Verify Phone
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <Button
+                                    onClick={() => setStep('address')}
+                                    disabled={!emailVerified || !phoneVerified}
+                                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-white disabled:opacity-50"
+                                >
+                                    Next
+                                </Button>
+                            </div>
+                        )}
+
+                        {step === 'address' && (
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label className="text-slate-300">Address Line 1</Label>
+                                    <Input value={address} onChange={e => setAddress(e.target.value)} className="bg-slate-900/50 border-white/10 text-white" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-slate-300">Address Line 2 (Optional)</Label>
+                                    <Input value={address1} onChange={e => setAddress1(e.target.value)} className="bg-slate-900/50 border-white/10 text-white" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-slate-300">City</Label>
+                                        <Input value={city} onChange={e => setCity(e.target.value)} className="bg-slate-900/50 border-white/10 text-white" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-slate-300">State</Label>
+                                        <Input value={state} onChange={e => setState(e.target.value)} className="bg-slate-900/50 border-white/10 text-white" />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-slate-300">Country</Label>
+                                        <Input value={country} onChange={e => setCountry(e.target.value)} className="bg-slate-900/50 border-white/10 text-white" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-slate-300">Pincode</Label>
+                                        <Input value={pincode} onChange={e => setPincode(e.target.value)} className="bg-slate-900/50 border-white/10 text-white" />
+                                    </div>
+                                </div>
+                                <Button onClick={handleAddressSubmit} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white">
+                                    Next
+                                </Button>
+                            </div>
+                        )}
+
+                        {step === 'documents' && (
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <FileUpload label="Address Proof" file={addressProof} setFile={setAddressProof} />
+                                    <FileUpload label="Bank Proof" file={bankProof} setFile={setBankProof} />
+                                    <FileUpload label="Identity Front" file={identityFront} setFile={setIdentityFront} />
+                                    <FileUpload label="Identity Back" file={identityBack} setFile={setIdentityBack} />
+                                    <FileUpload label="Selfie with ID" file={selfie} setFile={setSelfie} />
+                                    <FileUpload label="Other Proof (Optional)" file={otherProof} setFile={setOtherProof} />
+                                </div>
+                                <Button onClick={handleDocumentsSubmit} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white">
+                                    Next
+                                </Button>
+                            </div>
+                        )}
+
+                        {step === 'avatar' && (
+                            <div className="space-y-6 text-center">
+                                <div className="flex justify-center">
+                                    <div className="relative w-32 h-32 rounded-full overflow-hidden border-2 border-emerald-500 bg-slate-900">
+                                        {avatarPreview ? (
+                                            <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <User className="w-full h-full p-6 text-slate-600" />
+                                        )}
+                                        <input
+                                            type="file"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0]
+                                                if (file) {
+                                                    setAvatar(file)
+                                                    setAvatarPreview(URL.createObjectURL(file))
+                                                }
+                                            }}
+                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                            accept="image/*"
+                                        />
+                                    </div>
+                                </div>
+                                <p className="text-slate-400">Click to upload your profile picture</p>
+                                <Button onClick={handleFinalSubmit} disabled={isLoading} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white">
+                                    {isLoading ? 'Creating Account...' : 'Create Account'}
+                                </Button>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+    </div>
+)
 }

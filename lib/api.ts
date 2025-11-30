@@ -29,85 +29,62 @@ async function graphqlRequest(query: string, variables?: any, token?: string) {
     return result.data;
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+
+// Helper function to make REST requests
+async function restRequest(endpoint: string, method: string, body?: any, token?: string, isFormData: boolean = false) {
+    const headers: any = {};
+
+    if (!isFormData) {
+        headers['Content-Type'] = 'application/json';
+    }
+
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const config: any = {
+        method,
+        headers,
+    };
+
+    if (body) {
+        config.body = isFormData ? body : JSON.stringify(body);
+    }
+
+    const response = await fetch(`${API_URL}${endpoint}`, config);
+    const result = await response.json();
+
+    if (!response.ok) {
+        throw new Error(result.message || 'Request failed');
+    }
+
+    return result;
+}
+
 export const graphqlApi = {
     auth: {
-        register: async (input: {
-            fullname: string;
-            email: string;
-            password: string;
-            mobileNumber: string;
-            Address: string;
-            city: string;
-            state: string;
-            country: string;
-            pincode: string;
-        }) => {
-            const query = `
-        mutation Register($input: RegisterInput!) {
-          register(input: $input) {
-            success
-            message
-            token
-            user {
-              id
-              fullname
-              email
-              role
-            }
-          }
-        }
-      `;
-            return graphqlRequest(query, { input });
+        register: async (formData: FormData) => {
+            return restRequest('/auth/register', 'POST', formData, undefined, true);
         },
 
         login: async (input: { email: string; password: string }) => {
-            const query = `
-        mutation Login($input: LoginInput!) {
-          login(input: $input) {
-            success
-            message
-            token
-            user {
-              id
-              fullname
-              email
-              role
-            }
-          }
-        }
-      `;
-            return graphqlRequest(query, { input });
+            return restRequest('/auth/login', 'POST', input);
         },
 
         sendOTP: async (identifier: string) => {
-            const query = `
-        mutation SendOTP($identifier: String!) {
-          sendOTP(identifier: $identifier) {
-            success
-            message
-          }
-        }
-      `;
-            return graphqlRequest(query, { identifier });
+            // Determine if email or phone
+            const isEmail = identifier.includes('@');
+            const payload = isEmail ? { email: identifier } : { phone: identifier };
+            return restRequest('/auth/send-otp', 'POST', payload);
         },
 
         verifyOTP: async (identifier: string, code: string) => {
-            const query = `
-        mutation VerifyOTP($identifier: String!, $code: String!) {
-          verifyOTP(identifier: $identifier, code: $code) {
-            success
-            message
-            token
-            user {
-              id
-              fullname
-              email
-              role
-            }
-          }
-        }
-      `;
-            return graphqlRequest(query, { identifier, code });
+            const isEmail = identifier.includes('@');
+            const payload = isEmail
+                ? { email: identifier, emailOtp: code }
+                : { phone: identifier, phoneOtp: code };
+            return restRequest('/auth/verify-otp', 'POST', payload);
         },
 
         me: async (token: string) => {

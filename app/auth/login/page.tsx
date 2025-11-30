@@ -11,6 +11,7 @@ import { OTPVerification } from '@/components/auth/OTPVerification'
 import { signIn } from 'next-auth/react'
 import { detectInputType } from '@/lib/validators'
 import type { VerificationStep } from '@/types/auth'
+import { api } from '@/lib/api'
 
 export default function LoginPage() {
     const [identifier, setIdentifier] = useState('')
@@ -50,14 +51,20 @@ export default function LoginPage() {
         setIsLoading(true)
 
         try {
-            // In production, implement actual email/password authentication
-            // For now, just show a message
-            setTimeout(() => {
-                setError('Email/password login not yet implemented. Please use OTP.')
+            const result = await api.auth.login({
+                email: identifier,
+                password: password
+            })
+
+            if (result.login.success && result.login.token) {
+                localStorage.setItem('authToken', result.login.token)
+                window.location.href = '/dashboard'
+            } else {
+                setError(result.login.message || 'Login failed')
                 setIsLoading(false)
-            }, 1000)
-        } catch (err) {
-            setError('Login failed. Please try again.')
+            }
+        } catch (err: any) {
+            setError(err.message || 'Login failed. Please try again.')
             setIsLoading(false)
         }
     }
@@ -75,21 +82,15 @@ export default function LoginPage() {
         setInputType(type)
 
         try {
-            const response = await fetch('/api/auth/send-otp', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ identifier }),
-            })
+            const result = await api.auth.sendOTP(identifier)
 
-            const data = await response.json()
-
-            if (data.success) {
+            if (result.sendOTP.success) {
                 setStep('verify')
             } else {
-                setError(data.message || 'Failed to send OTP')
+                setError(result.sendOTP.message || 'Failed to send OTP')
             }
-        } catch (err) {
-            setError('Failed to send OTP. Please try again.')
+        } catch (err: any) {
+            setError(err.message || 'Failed to send OTP. Please try again.')
         } finally {
             setIsLoading(false)
         }
@@ -97,18 +98,10 @@ export default function LoginPage() {
 
     const handleVerifyOTP = async (otp: string): Promise<boolean> => {
         try {
-            const response = await fetch('/api/auth/verify-otp', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ identifier, code: otp }),
-            })
+            const result = await api.auth.verifyOTP(identifier, otp)
 
-            const data = await response.json()
-
-            if (data.success && data.token) {
-                // Store token in localStorage
-                localStorage.setItem('authToken', data.token)
-                // Redirect to dashboard
+            if (result.verifyOTP.success && result.verifyOTP.token) {
+                localStorage.setItem('authToken', result.verifyOTP.token)
                 window.location.href = '/dashboard'
                 return true
             }
@@ -123,17 +116,16 @@ export default function LoginPage() {
     }
 
     const handleGoogleSignIn = async () => {
-        await signIn('google', { callbackUrl: '/admin' })
+        await signIn('google', { callbackUrl: '/dashboard' })
     }
 
     if (step === 'verify') {
         return (
-            <div className="min-h-screen flex items-center justify-center p-8 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-purple-500/5 to-pink-500/5" />
-                <div className="absolute top-20 left-20 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-pulse" />
-                <div className="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
+            <div className="min-h-screen flex items-center justify-center p-8 relative overflow-hidden bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950">
+                <div className="absolute top-20 left-20 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl animate-pulse" />
+                <div className="absolute bottom-20 right-20 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl animate-pulse delay-1000" />
 
-                <div className="relative z-10">
+                <div className="relative z-10 w-full max-w-md">
                     <OTPVerification
                         identifier={identifier}
                         type={inputType}
@@ -147,20 +139,18 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-purple-500/5 to-pink-500/5" />
-
-            <div className="flex-1 flex items-center justify-center relative overflow-hidden">
-                <div className="absolute top-20 left-20 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-pulse" />
-                <div className="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
+        <div className="min-h-screen flex bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950">
+            <div className="flex-1 flex items-center justify-center relative overflow-hidden p-6">
+                <div className="absolute top-20 left-20 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl animate-pulse" />
+                <div className="absolute bottom-20 right-20 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl animate-pulse delay-1000" />
 
                 <div className="relative w-full max-w-md z-10">
-                    <Card className="shadow-2xl border-2">
+                    <Card className="shadow-2xl border border-white/10 bg-black/40 backdrop-blur-xl">
                         <CardHeader className="space-y-1 text-center">
-                            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                            <CardTitle className="text-3xl font-bold text-white">
                                 Welcome Back
                             </CardTitle>
-                            <CardDescription className="text-base">
+                            <CardDescription className="text-slate-400 text-base">
                                 Sign in to access your trading dashboard
                             </CardDescription>
                         </CardHeader>
@@ -169,7 +159,7 @@ export default function LoginPage() {
                             <Button
                                 onClick={handleGoogleSignIn}
                                 variant="outline"
-                                className="w-full h-11 text-base hover:scale-[1.02] transition-transform"
+                                className="w-full h-11 text-base hover:scale-[1.02] transition-transform bg-white/5 border-white/10 text-white hover:bg-white/10 hover:text-white"
                                 type="button"
                             >
                                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
@@ -183,7 +173,7 @@ export default function LoginPage() {
 
                             <div className="relative">
                                 <div className="relative flex justify-center text-xs uppercase">
-                                    <span className="bg-background px-2 text-muted-foreground">
+                                    <span className="bg-transparent px-2 text-slate-500">
                                         Or continue with {showPassword ? 'email' : 'email/phone'}
                                     </span>
                                 </div>
@@ -191,16 +181,16 @@ export default function LoginPage() {
 
                             {/* Email/Phone Input */}
                             <div className="space-y-2">
-                                <Label htmlFor="identifier">Email or Phone Number</Label>
+                                <Label htmlFor="identifier" className="text-slate-300">Email or Phone Number</Label>
                                 <div className="relative">
-                                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                    <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
                                     <Input
                                         id="identifier"
                                         type="text"
                                         placeholder="name@example.com or +1234567890"
                                         value={identifier}
                                         onChange={(e) => setIdentifier(e.target.value)}
-                                        className="pl-10 h-11"
+                                        className="pl-10 h-11 bg-slate-900/50 border-white/10 text-white placeholder:text-slate-600 focus:border-emerald-500/50 focus:ring-emerald-500/20"
                                     />
                                 </div>
                             </div>
@@ -209,23 +199,23 @@ export default function LoginPage() {
                             {showPassword && (
                                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
                                     <div className="flex items-center justify-between">
-                                        <Label htmlFor="password">Password</Label>
+                                        <Label htmlFor="password" className="text-slate-300">Password</Label>
                                         <Link
                                             href="/auth/forgot-password"
-                                            className="text-sm text-primary hover:underline"
+                                            className="text-sm text-emerald-400 hover:text-emerald-300 hover:underline"
                                         >
                                             Forgot password?
                                         </Link>
                                     </div>
                                     <div className="relative">
-                                        <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                        <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
                                         <Input
                                             id="password"
                                             type="password"
                                             placeholder="••••••••"
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
-                                            className="pl-10 h-11"
+                                            className="pl-10 h-11 bg-slate-900/50 border-white/10 text-white placeholder:text-slate-600 focus:border-emerald-500/50 focus:ring-emerald-500/20"
                                             onKeyDown={(e) => e.key === 'Enter' && handlePasswordLogin()}
                                         />
                                     </div>
@@ -233,7 +223,7 @@ export default function LoginPage() {
                             )}
 
                             {error && (
-                                <p className="text-sm text-destructive animate-shake">{error}</p>
+                                <p className="text-sm text-red-400 animate-shake bg-red-500/10 p-2 rounded border border-red-500/20 text-center">{error}</p>
                             )}
 
                             {/* Login Buttons */}
@@ -241,7 +231,7 @@ export default function LoginPage() {
                                 <div className="space-y-2">
                                     <Button
                                         onClick={handlePasswordLogin}
-                                        className="w-full h-11 border-2 border-primary text-base group"
+                                        className="w-full h-11 bg-emerald-500 hover:bg-emerald-600 text-white text-base group"
                                         disabled={isLoading || !identifier || !password}
                                     >
                                         {isLoading ? (
@@ -256,7 +246,7 @@ export default function LoginPage() {
                                     <Button
                                         onClick={handleSendOTP}
                                         variant="outline"
-                                        className="w-full h-11 text-base"
+                                        className="w-full h-11 text-base bg-transparent border-white/10 text-slate-300 hover:bg-white/5 hover:text-white"
                                         disabled={isLoading || !identifier}
                                     >
                                         Or use OTP instead
@@ -265,7 +255,7 @@ export default function LoginPage() {
                             ) : (
                                 <Button
                                     onClick={handleSendOTP}
-                                    className="w-full h-11 border-2 border-primary text-base group"
+                                    className="w-full h-11 bg-emerald-500 hover:bg-emerald-600 text-white text-base group"
                                     disabled={isLoading || !identifier}
                                 >
                                     {isLoading ? (
@@ -279,9 +269,9 @@ export default function LoginPage() {
                                 </Button>
                             )}
 
-                            <p className="text-center text-sm text-muted-foreground">
+                            <p className="text-center text-sm text-slate-400">
                                 Don't have an account?{' '}
-                                <Link href="/auth/open-account" className="text-primary font-medium hover:underline">
+                                <Link href="/auth/open-account" className="text-emerald-400 font-medium hover:text-emerald-300 hover:underline">
                                     Open Account
                                 </Link>
                             </p>
