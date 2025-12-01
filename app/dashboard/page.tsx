@@ -18,6 +18,8 @@ export default function Trading() {
   const [isWatchlistModalOpen, setIsWatchlistModalOpen] = useState(false)
   const [newWatchlistSymbol, setNewWatchlistSymbol] = useState("")
   const [newWatchlistType, setNewWatchlistType] = useState<"cryptocurrency" | "stock" | "forex" | "commodity">("cryptocurrency")
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [isSearching, setIsSearching] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
 
@@ -71,6 +73,24 @@ export default function Trading() {
 
     fetchDashboardData()
   }, [token])
+
+  const handleSearch = async (query: string) => {
+    setNewWatchlistSymbol(query)
+    if (!query || query.length < 2 || !token) {
+      setSearchResults([])
+      return
+    }
+
+    try {
+      setIsSearching(true)
+      const results = await api.market.search(token, query)
+      setSearchResults(results)
+    } catch (err) {
+      console.error("Search error:", err)
+    } finally {
+      setIsSearching(false)
+    }
+  }
 
   const handleAddWatchlist = async () => {
     if (!newWatchlistSymbol || !token) return
@@ -483,14 +503,47 @@ export default function Trading() {
         title="Add to Watchlist"
       >
         <div className="space-y-4">
-          <div className="space-y-2">
+          <div className="space-y-2 relative">
             <label className="text-xs font-medium text-slate-300">Asset Symbol</label>
             <Input
-              placeholder="e.g. BTC, ETH, AAPL"
+              placeholder="Search e.g. BTC, Apple, Gold"
               value={newWatchlistSymbol}
-              onChange={(e) => setNewWatchlistSymbol(e.target.value)}
+              onChange={(e) => handleSearch(e.target.value)}
               className="bg-slate-900 border-white/10 text-white"
             />
+
+            {/* Search Results Dropdown */}
+            {(searchResults.length > 0 || isSearching) && newWatchlistSymbol.length >= 2 && (
+              <div className="absolute z-10 w-full mt-1 bg-slate-800 border border-white/10 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                {isSearching ? (
+                  <div className="p-3 text-center text-slate-400 text-xs">Searching...</div>
+                ) : (
+                  searchResults.map((result: any) => (
+                    <div
+                      key={result.symbol}
+                      className="p-2 hover:bg-slate-700 cursor-pointer flex justify-between items-center transition-colors"
+                      onClick={() => {
+                        setNewWatchlistSymbol(result.symbol)
+                        // Try to auto-detect type
+                        if (result.type?.includes('Crypto')) setNewWatchlistType('cryptocurrency')
+                        else if (result.type?.includes('Stock')) setNewWatchlistType('stock')
+                        else if (result.type?.includes('Forex')) setNewWatchlistType('forex')
+
+                        setSearchResults([])
+                      }}
+                    >
+                      <div>
+                        <div className="font-bold text-white text-sm">{result.displaySymbol || result.symbol}</div>
+                        <div className="text-slate-400 text-xs">{result.description}</div>
+                      </div>
+                      <div className="text-slate-500 text-xs bg-slate-900 px-2 py-1 rounded border border-white/5">
+                        {result.type}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
           <div className="space-y-2">
             <label className="text-xs font-medium text-slate-300">Asset Type</label>

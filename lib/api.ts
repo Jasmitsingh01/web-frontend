@@ -511,6 +511,26 @@ export const graphqlApi = {
         undefined,
         token
       );
+    },
+
+    getStockSymbols: async (token: string, exchange: string = 'US') => {
+      return restRequest(`/market/stocks/symbols?exchange=${exchange}`, 'GET', undefined, token);
+    },
+
+    getForexExchanges: async (token: string) => {
+      return restRequest('/market/forex/exchanges', 'GET', undefined, token);
+    },
+
+    getForexSymbols: async (token: string, exchange: string = 'OANDA') => {
+      return restRequest(`/market/forex/symbols?exchange=${exchange}`, 'GET', undefined, token);
+    },
+
+    getCryptoExchanges: async (token: string) => {
+      return restRequest('/market/crypto/exchanges', 'GET', undefined, token);
+    },
+
+    getCryptoSymbols: async (token: string, exchange: string = 'BINANCE') => {
+      return restRequest(`/market/crypto/symbols?exchange=${exchange}`, 'GET', undefined, token);
     }
   }
 };
