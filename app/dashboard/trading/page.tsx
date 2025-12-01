@@ -12,9 +12,12 @@ export default function Trading() {
   const [watchlist, setWatchlist] = useState<any[]>([])
   const [selectedSymbol, setSelectedSymbol] = useState("AAPL")
   const [selectedAssetType, setSelectedAssetType] = useState("stock")
+  const [currentTimeframe, setCurrentTimeframe] = useState("1D")
   const [candleData, setCandleData] = useState<any[]>([])
   const [quote, setQuote] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
 
   // Get token and selected symbol from localStorage
   useEffect(() => {
@@ -92,7 +95,7 @@ export default function Trading() {
           resolution = '5'
       }
 
-      const result = await api.market.getCandles(token, symbol, resolution, from, to)
+      const result = await api.market.getCandles(token, symbol, resolution, from, to, selectedAssetType)
 
       if (result.data && result.data.t && result.data.t.length > 0) {
         const candles = result.data.t.map((timestamp: number, idx: number) => ({
@@ -131,9 +134,10 @@ export default function Trading() {
         if (token) {
           await Promise.all([
             fetchWatchlist().catch(err => console.error('Watchlist error:', err)),
-            fetchCandleData(selectedSymbol).catch(err => console.error('Candle error:', err)),
+            fetchCandleData(selectedSymbol, currentTimeframe).catch(err => console.error('Candle error:', err)),
             fetchQuote(selectedSymbol, selectedAssetType).catch(err => console.error('Quote error:', err))
           ])
+          setLastUpdate(new Date())
         }
       } catch (err) {
         console.error('Error loading data:', err)
@@ -147,31 +151,57 @@ export default function Trading() {
     }, 100)
 
     return () => clearTimeout(timer)
-  }, [token, selectedSymbol, selectedAssetType])
+  }, [token, selectedSymbol, selectedAssetType, currentTimeframe])
 
-  // Auto-refresh every 10 seconds
+  // Auto-refresh every 5 seconds for more real-time feel
   useEffect(() => {
     if (!token) return
 
-    const interval = setInterval(() => {
-      fetchWatchlist()
-      fetchQuote(selectedSymbol, selectedAssetType)
-    }, 10000)
+    const interval = setInterval(async () => {
+      setIsRefreshing(true)
+      try {
+        await Promise.all([
+          fetchWatchlist(),
+          fetchQuote(selectedSymbol, selectedAssetType),
+          fetchCandleData(selectedSymbol, currentTimeframe)
+        ])
+        setLastUpdate(new Date())
+      } catch (err) {
+        console.error('Error refreshing data:', err)
+      } finally {
+        setIsRefreshing(false)
+      }
+    }, 5000) // Changed from 10000 to 5000 for faster updates
 
     return () => clearInterval(interval)
-  }, [token, selectedSymbol, selectedAssetType])
+  }, [token, selectedSymbol, selectedAssetType, currentTimeframe])
 
   // Handle symbol selection
   const handleSymbolSelect = (symbol: string) => {
     setSelectedSymbol(symbol)
+
+    // Determine asset type based on symbol format
+    let type = 'stock'
+    if (symbol.includes('/') && !symbol.includes('USDT')) {
+      type = 'forex'
+    } else if (['BTC', 'ETH', 'BNB', 'SOL', 'XRP', 'ADA', 'AVAX', 'DOGE'].includes(symbol) || symbol.endsWith('USDT')) {
+      type = 'crypto'
+    }
+
+    setSelectedAssetType(type)
+
     if (token) {
-      fetchCandleData(symbol)
-      fetchQuote(symbol, 'stock')
+      // Pass the determined type to fetchCandleData
+      // We need to update fetchCandleData to accept type as argument or rely on state update
+      // Since state update is async, better to pass it directly here, but fetchCandleData uses state
+      // So we'll trigger it in a useEffect when selectedAssetType changes, OR update fetchCandleData signature
+      // For now, let's rely on the useEffect dependency on selectedAssetType
     }
   }
 
   // Handle timeframe change
   const handleTimeframeChange = (timeframe: string) => {
+    setCurrentTimeframe(timeframe)
     if (token) {
       fetchCandleData(selectedSymbol, timeframe)
     }
@@ -220,6 +250,28 @@ export default function Trading() {
           change={quote?.change}
           changePercent={quote?.changePercent}
         />
+
+        {/* Live Data Indicator */}
+        <div className="px-6 py-2 border-b border-white/10 bg-slate-900/30">
+          <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2">
+              <div className={`flex items-center gap-1.5 ${isRefreshing ? 'text-emerald-400' : 'text-slate-400'}`}>
+                <div className={`w-2 h-2 rounded-full ${isRefreshing ? 'bg-emerald-400 animate-pulse' : 'bg-emerald-500'}`}></div>
+                <span className="font-medium">
+                  {isRefreshing ? 'Updating...' : 'Live Data'}
+                </span>
+              </div>
+              {lastUpdate && (
+                <span className="text-slate-500">
+                  • Last updated: {lastUpdate.toLocaleTimeString()}
+                </span>
+              )}
+            </div>
+            <div className="text-slate-500">
+              Auto-refresh: 5s
+            </div>
+          </div>
+        </div>
 
         <div className="flex-1 flex">
           <div className="flex-1 flex flex-col">
