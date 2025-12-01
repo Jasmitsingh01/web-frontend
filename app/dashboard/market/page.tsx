@@ -47,12 +47,15 @@ export default function Markets() {
                     api.market.getCryptoSymbols(token)
                 ])
 
-                setStockSymbols(stocks || [])
-                setForexSymbols(forex || [])
-                setCryptoSymbols(crypto || [])
+                // Handle API response format (responses have .data property)
+                setStockSymbols(stocks?.data || stocks || [])
+                setForexSymbols(forex?.data || forex || [])
+                setCryptoSymbols(crypto?.data || crypto || [])
                 setAreSymbolsLoaded(true)
             } catch (err) {
                 console.error("Error fetching symbol lists:", err)
+                // Set loaded to true even on error to prevent infinite loading
+                setAreSymbolsLoaded(true)
             }
         }
 
@@ -86,33 +89,63 @@ export default function Markets() {
                 let symbolsToFetch: { symbol: string, type: string, category: string }[] = []
 
                 if (activeTab === 'All' || activeTab === 'Stocks') {
-                    // Take top 10 stocks
-                    const stocks = stockSymbols.slice(0, 10).map(s => ({
-                        symbol: s.symbol,
-                        type: 'stock',
-                        category: 'Stocks'
-                    }))
-                    symbolsToFetch = [...symbolsToFetch, ...stocks]
+                    // Take top 10 stocks, or use fallback popular stocks if none loaded
+                    if (stockSymbols.length > 0) {
+                        const stocks = stockSymbols.slice(0, 10).map(s => ({
+                            symbol: s.symbol,
+                            type: 'stock',
+                            category: 'Stocks'
+                        }))
+                        symbolsToFetch = [...symbolsToFetch, ...stocks]
+                    } else {
+                        // Fallback to popular stocks
+                        const fallbackStocks = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA', 'META', 'NFLX']
+                        symbolsToFetch = [...symbolsToFetch, ...fallbackStocks.map(sym => ({
+                            symbol: sym,
+                            type: 'stock',
+                            category: 'Stocks'
+                        }))]
+                    }
                 }
 
                 if (activeTab === 'All' || activeTab === 'Crypto') {
-                    // Take top 10 crypto
-                    const crypto = cryptoSymbols.slice(0, 10).map(s => ({
-                        symbol: s.symbol, // Backend handles BINANCE: prefix if needed, or we pass raw
-                        type: 'crypto',
-                        category: 'Crypto'
-                    }))
-                    symbolsToFetch = [...symbolsToFetch, ...crypto]
+                    // Take top 10 crypto, or use fallback popular crypto if none loaded
+                    if (cryptoSymbols.length > 0) {
+                        const crypto = cryptoSymbols.slice(0, 10).map(s => ({
+                            symbol: s.symbol,
+                            type: 'crypto',
+                            category: 'Crypto'
+                        }))
+                        symbolsToFetch = [...symbolsToFetch, ...crypto]
+                    } else {
+                        // Fallback to popular crypto
+                        const fallbackCrypto = ['BTC', 'ETH', 'BNB', 'SOL', 'ADA']
+                        symbolsToFetch = [...symbolsToFetch, ...fallbackCrypto.map(sym => ({
+                            symbol: sym,
+                            type: 'crypto',
+                            category: 'Crypto'
+                        }))]
+                    }
                 }
 
                 if (activeTab === 'All' || activeTab === 'Forex') {
-                    // Take top 10 forex
-                    const forex = forexSymbols.slice(0, 10).map(s => ({
-                        symbol: s.symbol,
-                        type: 'forex',
-                        category: 'Forex'
-                    }))
-                    symbolsToFetch = [...symbolsToFetch, ...forex]
+                    // Take top 10 forex, or use fallback popular pairs if none loaded
+                    if (forexSymbols.length > 0) {
+                        const forex = forexSymbols.slice(0, 10).map(s => ({
+                            symbol: s.symbol,
+                            type: 'forex',
+                            category: 'Forex'
+                        }))
+                        symbolsToFetch = [...symbolsToFetch, ...forex]
+                    } else {
+                        // Fallback to popular forex pairs
+                        const fallbackForex = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'USD/CHF']
+                        symbolsToFetch = [...symbolsToFetch, ...fallbackForex.map(sym => ({
+                            symbol: sym,
+                            type: 'forex',
+                            category: 'Forex'
+                        }))]
+                    }
                 }
 
                 // If no symbols loaded yet, don't fetch quotes
