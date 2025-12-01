@@ -504,9 +504,13 @@ export const graphqlApi = {
       return restRequest(`/market/company-profile?symbol=${symbol}`, 'GET', undefined, token);
     },
 
-    getCandles: async (token: string, symbol: string, resolution: string, from: number, to: number) => {
+    getCandles: async (token: string, symbol: string, resolution: string, from: number, to: number, assetType?: string) => {
+      let url = `/market/candles?symbol=${symbol}&resolution=${resolution}&from=${from}&to=${to}`;
+      if (assetType) {
+        url += `&assetType=${assetType}`;
+      }
       return restRequest(
-        `/market/candles?symbol=${symbol}&resolution=${resolution}&from=${from}&to=${to}`,
+        url,
         'GET',
         undefined,
         token
