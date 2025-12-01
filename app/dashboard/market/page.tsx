@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ChevronRight } from "lucide-react"
 import { Tabs } from "@/components/ui/tabs"
 import { SearchInput } from "@/components/ui/search-input"
@@ -8,38 +8,189 @@ import { MarketTable } from "@/components/dashboard/MarketTable"
 import { Modal } from "@/components/ui/modal"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { api } from "@/lib/api"
 
 export default function Markets() {
     const [activeTab, setActiveTab] = useState("All")
     const [selectedInterval, setSelectedInterval] = useState("Today")
     const [isTradeModalOpen, setIsTradeModalOpen] = useState(false)
     const [selectedAsset, setSelectedAsset] = useState<any>(null)
+    const [token, setToken] = useState<string | null>(null)
+    const [isLoading, setIsLoading] = useState(true)
 
-    // Market overview data
-    const marketOverview = [
-        { symbol: "EUR/USD", category: "Forex", price: "1.0832", change: "+82.4k", changePercent: "London/NY", action: "Trade", pair: "EUR/USD", value: "1.0832" },
-        { symbol: "AAPL", category: "Stocks", price: "215.42", change: "+1.76%", changePercent: "US", action: "Trade", pair: "Market cap and dividend yield offer different perspectives...", value: "" },
-        { symbol: "BTC/USD", category: "Crypto", price: "$4,423.10", change: "+8.1k", changePercent: "24/7", action: "Trade", pair: "", value: "" },
-        { symbol: "ETH/USD", category: "Crypto", price: "$2,435.18", change: "+142.1k", changePercent: "24/7", action: "Trade", pair: "", value: "" },
-        { symbol: "TSLA", category: "Stocks", price: "192.04", change: "+31.7%", changePercent: "US", action: "Trade", pair: "", value: "" },
-        { symbol: "USD/JPY", category: "Forex", price: "154.23", change: "+65.0k", changePercent: "Tokyo/NY", action: "Trade", pair: "", value: "" }
-    ]
+    // Dynamic Data States
+    const [marketOverview, setMarketOverview] = useState<any[]>([])
+    const [majorIndices, setMajorIndices] = useState<any[]>([])
+    const [topMovers, setTopMovers] = useState<any[]>([])
 
-    // Major indices
-    const majorIndices = [
-        { name: "S&P 500", value: "5,235.74" },
-        { name: "Nasdaq 100", value: "18,281.23" },
-        { name: "Dow Jones", value: "39,140.23" }
-    ]
+    // Symbol Lists
+    const [stockSymbols, setStockSymbols] = useState<any[]>([])
+    const [forexSymbols, setForexSymbols] = useState<any[]>([])
+    const [cryptoSymbols, setCryptoSymbols] = useState<any[]>([])
+    const [areSymbolsLoaded, setAreSymbolsLoaded] = useState(false)
+
+    // Get token from localStorage
+    useEffect(() => {
+        const storedToken = localStorage.getItem('token')
+        setToken(storedToken)
+    }, [])
+
+    // Fetch Symbol Lists (Once)
+    useEffect(() => {
+        const fetchSymbols = async () => {
+            if (!token || areSymbolsLoaded) return
+
+            try {
+                const [stocks, forex, crypto] = await Promise.all([
+                    api.market.getStockSymbols(token),
+                    api.market.getForexSymbols(token),
+                    api.market.getCryptoSymbols(token)
+                ])
+
+                setStockSymbols(stocks || [])
+                setForexSymbols(forex || [])
+                setCryptoSymbols(crypto || [])
+                setAreSymbolsLoaded(true)
+            } catch (err) {
+                console.error("Error fetching symbol lists:", err)
+            }
+        }
+
+        fetchSymbols()
+    }, [token, areSymbolsLoaded])
+
+    // Fetch Market Data
+    useEffect(() => {
+        const fetchMarketData = async () => {
+            if (!token || !areSymbolsLoaded) return
+            setIsLoading(true)
+
+            try {
+                // 1. Fetch Major Indices (using specific symbols)
+                const indicesSymbols = ['SPY', 'QQQ', 'DIA'] // ETFs as proxies for S&P 500, Nasdaq, Dow
+                const indicesPromises = indicesSymbols.map(sym => api.market.getQuote(token, sym, 'stock'))
+                const indicesResponses = await Promise.all(indicesPromises)
+
+                const indicesData = indicesResponses.map((res: any, idx) => {
+                    const data = res.data || res
+                    const names = ["S&P 500 (ETF)", "Nasdaq 100 (ETF)", "Dow Jones (ETF)"]
+                    return {
+                        name: names[idx],
+                        value: data.price?.toFixed(2) || "0.00",
+                        change: (data.changePercent?.toFixed(2) || "0.00") + "%"
+                    }
+                })
+                setMajorIndices(indicesData)
+
+                // 2. Fetch Market Overview based on Active Tab
+                let symbolsToFetch: { symbol: string, type: string, category: string }[] = []
+
+                if (activeTab === 'All' || activeTab === 'Stocks') {
+                    // Take top 10 stocks
+                    const stocks = stockSymbols.slice(0, 10).map(s => ({
+                        symbol: s.symbol,
+                        type: 'stock',
+                        category: 'Stocks'
+                    }))
+                    symbolsToFetch = [...symbolsToFetch, ...stocks]
+                }
+
+                if (activeTab === 'All' || activeTab === 'Crypto') {
+                    // Take top 10 crypto
+                    const crypto = cryptoSymbols.slice(0, 10).map(s => ({
+                        symbol: s.symbol, // Backend handles BINANCE: prefix if needed, or we pass raw
+                        type: 'crypto',
+                        category: 'Crypto'
+                    }))
+                    symbolsToFetch = [...symbolsToFetch, ...crypto]
+                }
+
+                if (activeTab === 'All' || activeTab === 'Forex') {
+                    // Take top 10 forex
+                    const forex = forexSymbols.slice(0, 10).map(s => ({
+                        symbol: s.symbol,
+                        type: 'forex',
+                        category: 'Forex'
+                    }))
+                    symbolsToFetch = [...symbolsToFetch, ...forex]
+                }
+
+                // If no symbols loaded yet, don't fetch quotes
+                if (symbolsToFetch.length === 0) {
+                    setIsLoading(false)
+                    return
+                }
+
+                const overviewPromises = symbolsToFetch.map(item => api.market.getQuote(token, item.symbol, item.type))
+                const overviewResponses = await Promise.all(overviewPromises)
+
+                const overviewData = overviewResponses.map((res: any, idx) => {
+                    const data = res.data || res
+                    const item = symbolsToFetch[idx]
+
+                    let displaySymbol = item.symbol
+                    if (item.category === 'Crypto') {
+                        // Clean up BINANCE: prefix if present in the source symbol
+                        displaySymbol = item.symbol.replace('BINANCE:', '').replace('USDT', '/USD')
+                        if (!displaySymbol.includes('/')) displaySymbol += '/USD'
+                    }
+
+                    return {
+                        symbol: displaySymbol,
+                        category: item.category,
+                        price: data.price?.toFixed(2) || "0.00",
+                        change: (data.change >= 0 ? "+" : "") + (data.change?.toFixed(2) || "0.00"),
+                        changePercent: (data.changePercent?.toFixed(2) || "0.00") + "%",
+                        action: "Trade",
+                        pair: item.category === 'Stocks' ? "US" : "Global",
+                        value: data.price?.toFixed(2)
+                    }
+                })
+                setMarketOverview(overviewData)
+
+                // 3. Top Movers
+                const sortedByChange = [...overviewData].sort((a, b) => parseFloat(b.changePercent) - parseFloat(a.changePercent))
+                setTopMovers([
+                    {
+                        category: "Top Gainers",
+                        movers: sortedByChange.slice(0, 3).map(m => ({
+                            symbol: m.symbol,
+                            name: m.category,
+                            change: m.changePercent
+                        }))
+                    },
+                    {
+                        category: "Top Losers",
+                        movers: sortedByChange.slice(-3).reverse().map(m => ({
+                            symbol: m.symbol,
+                            name: m.category,
+                            change: m.changePercent
+                        }))
+                    }
+                ])
+
+            } catch (err) {
+                console.error("Error fetching market data:", err)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+
+        fetchMarketData()
+
+        const interval = setInterval(fetchMarketData, 30000)
+        return () => clearInterval(interval)
+
+    }, [token, activeTab, areSymbolsLoaded, stockSymbols, forexSymbols, cryptoSymbols])
 
     // Market Stats
     const marketStats = {
         investors: "315 mn",
         volatility: "31 pts",
-        cryptoValue: "25 mn",
-        timeframe: "Crypto volatility",
+        cryptoValue: "2.5 tn",
+        timeframe: "Global Cap",
         note: "Now 24hr figure",
-        timeRemaining: "13.2 min",
+        timeRemaining: "Live",
         taxAdvantage: "Tax-advantage account | 8 stocks and ETF available"
     }
 
@@ -50,27 +201,20 @@ export default function Markets() {
         { name: "Crypto core", subtitle: "Top markets only", count: "15 majors" }
     ]
 
-    // Top movers by asset
-    const topMovers = [
-        {
-            category: "Forex", movers: [
-                { symbol: "GBP/USD", name: "Sterling Dollar", change: "GBP" },
-                { symbol: "AUD/JPY", name: "Australian Yen", change: "AUD" },
-                { symbol: "EUR/CHF", name: "Euro / Swiss Franc", change: "CHF/F" }
-            ]
-        },
-        {
-            category: "Stocks", movers: [
-                { symbol: "NVDA", name: "Nvidia", change: "SPX" },
-                { symbol: "AMD", name: "Advanced...", change: "NAS" },
-                { symbol: "META", name: "Meta Platforms", change: "CAA" }
-            ]
-        }
-    ]
-
     const handleTrade = (item: any) => {
         setSelectedAsset(item)
         setIsTradeModalOpen(true)
+    }
+
+    if (isLoading && !marketOverview.length) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 text-white flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4"></div>
+                    <p className="text-slate-400">Loading market data...</p>
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -96,7 +240,7 @@ export default function Markets() {
                             {/* Tabs */}
                             <div className="mb-4">
                                 <Tabs
-                                    tabs={["All", "Forex", "Stocks", "Crypto", "Futures"]}
+                                    tabs={["All", "Stocks", "Crypto"]}
                                     activeTab={activeTab}
                                     onTabChange={setActiveTab}
                                 />
@@ -136,7 +280,7 @@ export default function Markets() {
 
                         {/* Top Movers by Asset */}
                         <div>
-                            <h2 className="text-lg font-bold mb-4 text-white">Top movers by asset</h2>
+                            <h2 className="text-lg font-bold mb-4 text-white">Top movers</h2>
                             <p className="text-xs text-slate-400 mb-4">Biggest gainers and falling fast</p>
 
                             <div className="grid grid-cols-2 gap-6">
@@ -144,13 +288,13 @@ export default function Markets() {
                                     <div key={idx}>
                                         <h3 className="text-sm font-bold mb-3 text-slate-300">{section.category}</h3>
                                         <div className="space-y-2">
-                                            {section.movers.map((mover, moverIdx) => (
+                                            {section.movers.map((mover: any, moverIdx: number) => (
                                                 <div key={moverIdx} className="flex items-center justify-between p-3 border border-white/10 rounded-lg bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm hover:bg-white/5">
                                                     <div>
                                                         <div className="font-semibold text-sm text-white">{mover.symbol}</div>
                                                         <div className="text-xs text-slate-400">{mover.name}</div>
                                                     </div>
-                                                    <div className="text-xs font-medium text-slate-300 bg-white/10 px-2 py-1 rounded">
+                                                    <div className={`text-xs font-medium px-2 py-1 rounded ${mover.change.includes('-') ? 'text-red-400 bg-red-500/10' : 'text-emerald-400 bg-emerald-500/10'}`}>
                                                         {mover.change}
                                                     </div>
                                                 </div>
@@ -172,13 +316,18 @@ export default function Markets() {
                                     Hide
                                 </button>
                             </div>
-                            <p className="text-xs text-slate-400 mb-4">S&P 500 top components</p>
+                            <p className="text-xs text-slate-400 mb-4">Market Proxies (ETFs)</p>
 
                             <div className="space-y-3">
                                 {majorIndices.map((index, idx) => (
                                     <div key={idx} className="p-4 border border-white/10 rounded-lg bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm">
-                                        <div className="text-xs text-slate-400 mb-1">{index.name}</div>
-                                        <div className="text-2xl font-bold text-white">{index.value}</div>
+                                        <div className="flex justify-between items-center">
+                                            <div className="text-xs text-slate-400 mb-1">{index.name}</div>
+                                            <div className={`text-xs font-medium ${index.change.includes('-') ? 'text-red-400' : 'text-emerald-400'}`}>
+                                                {index.change}
+                                            </div>
+                                        </div>
+                                        <div className="text-2xl font-bold text-white">${index.value}</div>
                                     </div>
                                 ))}
                             </div>
@@ -206,21 +355,19 @@ export default function Markets() {
                                 </div>
 
                                 <div>
-                                    <div className="text-xs text-slate-400 mb-1">Near 52w figure</div>
+                                    <div className="text-xs text-slate-400 mb-1">Global Crypto Cap</div>
                                     <div className="flex items-baseline gap-2">
                                         <span className="text-xl font-bold text-white">{marketStats.cryptoValue}</span>
-                                        <span className="text-sm text-slate-400">mn</span>
+                                        <span className="text-sm text-slate-400"></span>
                                     </div>
                                     <div className="text-xs text-slate-500 mt-1">{marketStats.timeframe}</div>
                                 </div>
 
                                 <div>
-                                    <div className="text-xs text-slate-400 mb-1">Near 24hr figure</div>
+                                    <div className="text-xs text-slate-400 mb-1">Market Status</div>
                                     <div className="flex items-baseline gap-2">
                                         <span className="text-xl font-bold text-white">{marketStats.timeRemaining}</span>
-                                        <span className="text-sm text-slate-400">min</span>
                                     </div>
-                                    <div className="text-xs text-slate-500 mt-1">Time remaining</div>
                                 </div>
                             </div>
 
@@ -272,7 +419,7 @@ export default function Markets() {
                 <div className="space-y-4">
                     <div className="flex justify-between items-center text-sm text-slate-400">
                         <span>Current Price</span>
-                        <span className="text-white font-bold">{selectedAsset?.price}</span>
+                        <span className="text-white font-bold">${selectedAsset?.price}</span>
                     </div>
                     <div className="space-y-2">
                         <label className="text-xs font-medium text-slate-300">Amount</label>

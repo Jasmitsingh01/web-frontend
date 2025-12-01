@@ -3,14 +3,18 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 
-export function OrderTicket() {
+interface OrderTicketProps {
+    symbol?: string
+    currentPrice?: number
+}
+
+export function OrderTicket({ symbol = "AAPL", currentPrice = 0 }: OrderTicketProps) {
     const [activeOrderTab, setActiveOrderTab] = useState("Buy")
     const [orderType, setOrderType] = useState("Market")
     const [quantity, setQuantity] = useState("100")
 
     const calculateTotal = () => {
         if (!quantity || isNaN(parseFloat(quantity))) return "0.00"
-        const currentPrice = 215.42
         return (parseFloat(quantity) * currentPrice).toFixed(2)
     }
 
@@ -44,7 +48,7 @@ export function OrderTicket() {
             <div className="mb-4">
                 <label className="text-xs text-gray-400 block mb-2">Symbol</label>
                 <div className="bg-slate-950 border border-gray-700 rounded px-3 py-2.5 text-sm font-medium">
-                    AAPL - NASDAQ
+                    {symbol} - NASDAQ
                 </div>
             </div>
 

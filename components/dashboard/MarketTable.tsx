@@ -39,7 +39,7 @@ export function MarketTable({ items, onAction }: MarketTableProps) {
                                 <div className="text-xs text-slate-400">{item.category}</div>
                             </td>
                             <td className="px-4 py-3 font-medium text-slate-300">{item.price}</td>
-                            <td className="px-4 py-3 text-emerald-400 font-medium">{item.change}</td>
+                            <td className={`px-4 py-3 font-medium ${item.change.includes('-') ? 'text-red-400' : 'text-emerald-400'}`}>{item.change}</td>
                             <td className="px-4 py-3 text-slate-400">{item.changePercent}</td>
                             <td className="px-4 py-3 text-slate-400">-</td>
                             <td className="px-4 py-3 text-slate-400">-</td>

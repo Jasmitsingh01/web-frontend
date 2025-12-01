@@ -12,9 +12,11 @@ interface WatchlistItem {
 
 interface WatchlistSidebarProps {
     watchlist: WatchlistItem[]
+    onSymbolSelect?: (symbol: string) => void
+    selectedSymbol?: string
 }
 
-export function WatchlistSidebar({ watchlist }: WatchlistSidebarProps) {
+export function WatchlistSidebar({ watchlist, onSymbolSelect, selectedSymbol }: WatchlistSidebarProps) {
     return (
         <div className="w-64 bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 border-r border-gray-800 flex flex-col">
             <div className="p-4 border-b border-gray-800">
@@ -39,7 +41,8 @@ export function WatchlistSidebar({ watchlist }: WatchlistSidebarProps) {
                 {watchlist.map((stock, idx) => (
                     <div
                         key={idx}
-                        className={`px-4 py-3 border-b border-gray-800 hover:bg-slate-950/50 cursor-pointer transition ${idx === 0 ? 'bg-slate-950/70 border-l-2 border-l-emerald-500' : ''
+                        onClick={() => onSymbolSelect?.(stock.symbol)}
+                        className={`px-4 py-3 border-b border-gray-800 hover:bg-slate-950/50 cursor-pointer transition ${stock.symbol === selectedSymbol ? 'bg-slate-950/70 border-l-2 border-l-emerald-500' : ''
                             }`}
                     >
                         <div className="flex items-center justify-between mb-1">
@@ -51,8 +54,7 @@ export function WatchlistSidebar({ watchlist }: WatchlistSidebarProps) {
                         </div>
                         <div className="flex items-center justify-between">
                             <div className="text-sm font-semibold">{stock.price}</div>
-                            <div className={`text-xs font-medium flex items-center gap-1 ${stock.positive ? 'text-emerald-400' : 'text-red-400'
-                                }`}>
+                            <div className={`text-xs font-medium flex items-center gap-1 ${stock.positive ? 'text-emerald-400' : 'text-red-400'}`}>
                                 {stock.positive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                                 {stock.change}
                             </div>

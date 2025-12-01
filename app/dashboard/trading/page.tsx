@@ -1,64 +1,222 @@
 'use client'
 
+import { useEffect, useState } from "react"
+import { api } from "@/lib/api"
 import { WatchlistSidebar } from "@/components/dashboard/WatchlistSidebar"
 import { TradingHeader } from "@/components/dashboard/TradingHeader"
 import { TradingChart } from "@/components/dashboard/TradingChart"
 import { OrderTicket } from "@/components/dashboard/OrderTicket"
 
 export default function Trading() {
-  // Market watchlist data
-  const watchlist = [
-    { symbol: "AAPL", name: "Apple", price: "215.42", change: "+0.85%", positive: true },
-    { symbol: "TSLA", name: "Tesla", price: "384.10", change: "+2.34%", positive: true },
-    { symbol: "GOOG", name: "Alphabet", price: "141.27", change: "-0.45%", positive: false },
-    { symbol: "TSLA", name: "Tesla", price: "288.92", change: "-1.20%", positive: false },
-    { symbol: "AMZN", name: "Amazon", price: "174.85", change: "+1.15%", positive: true },
-    { symbol: "NVDA", name: "NVIDIA", price: "898.20", change: "+3.45%", positive: true },
-    { symbol: "META", name: "Meta Platforms", price: "374.38", change: "+0.92%", positive: true },
-  ]
+  const [token, setToken] = useState<string | null>(null)
+  const [watchlist, setWatchlist] = useState<any[]>([])
+  const [selectedSymbol, setSelectedSymbol] = useState("AAPL")
+  const [selectedAssetType, setSelectedAssetType] = useState("stock")
+  const [candleData, setCandleData] = useState<any[]>([])
+  const [quote, setQuote] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Open orders data
+  // Get token from localStorage
+  useEffect(() => {
+    const storedToken = localStorage.getItem('token')
+    setToken(storedToken)
+  }, [])
+
+  // Fetch watchlist with live prices
+  const fetchWatchlist = async () => {
+    if (!token) return
+
+    try {
+      const result = await api.market.getWatchlistQuotes(token)
+      const quotes = Array.isArray(result) ? result : (result.data || [])
+
+      const formatted = quotes.map((item: any) => ({
+        symbol: item.symbol,
+        name: item.symbol,
+        price: `$${item.price?.toFixed(2) || '0.00'}`,
+        change: `${item.changePercent >= 0 ? '+' : ''}${item.changePercent?.toFixed(2) || '0.00'}%`,
+        positive: item.changePercent >= 0
+      }))
+
+      setWatchlist(formatted)
+    } catch (err) {
+      console.error('Error fetching watchlist:', err)
+    }
+  }
+
+  // Fetch candle data for chart
+  const fetchCandleData = async (symbol: string, timeframe: string = '1D') => {
+    if (!token) return
+
+    try {
+      const to = Math.floor(Date.now() / 1000)
+      let from = to
+      let resolution = 'D'
+
+      switch (timeframe) {
+        case '1D':
+          from = to - (24 * 60 * 60)
+          resolution = '5'
+          break
+        case '5D':
+          from = to - (5 * 24 * 60 * 60)
+          resolution = '15'
+          break
+        case '1M':
+          from = to - (30 * 24 * 60 * 60)
+          resolution = '60'
+          break
+        case '6M':
+          from = to - (180 * 24 * 60 * 60)
+          resolution = 'D'
+          break
+        case '1Y':
+          from = to - (365 * 24 * 60 * 60)
+          resolution = 'D'
+          break
+        default:
+          from = to - (24 * 60 * 60)
+          resolution = '5'
+      }
+
+      const result = await api.market.getCandles(token, symbol, resolution, from, to)
+
+      if (result.data && result.data.t && result.data.t.length > 0) {
+        const candles = result.data.t.map((timestamp: number, idx: number) => ({
+          x: timestamp * 1000,
+          y: [
+            result.data.o[idx],
+            result.data.h[idx],
+            result.data.l[idx],
+            result.data.c[idx]
+          ]
+        }))
+        setCandleData(candles)
+      }
+    } catch (err) {
+      console.error('Error fetching candle data:', err)
+    }
+  }
+
+  // Fetch current quote
+  const fetchQuote = async (symbol: string, assetType: string) => {
+    if (!token) return
+
+    try {
+      const result = await api.market.getQuote(token, symbol, assetType)
+      setQuote(result.data || result)
+    } catch (err) {
+      console.error('Error fetching quote:', err)
+    }
+  }
+
+  // Initial data load
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true)
+      try {
+        if (token) {
+          await Promise.all([
+            fetchWatchlist().catch(err => console.error('Watchlist error:', err)),
+            fetchCandleData(selectedSymbol).catch(err => console.error('Candle error:', err)),
+            fetchQuote(selectedSymbol, selectedAssetType).catch(err => console.error('Quote error:', err))
+          ])
+        }
+      } catch (err) {
+        console.error('Error loading data:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    const timer = setTimeout(() => {
+      loadData()
+    }, 100)
+
+    return () => clearTimeout(timer)
+  }, [token])
+
+  // Auto-refresh every 10 seconds
+  useEffect(() => {
+    if (!token) return
+
+    const interval = setInterval(() => {
+      fetchWatchlist()
+      fetchQuote(selectedSymbol, selectedAssetType)
+    }, 10000)
+
+    return () => clearInterval(interval)
+  }, [token, selectedSymbol, selectedAssetType])
+
+  // Handle symbol selection
+  const handleSymbolSelect = (symbol: string) => {
+    setSelectedSymbol(symbol)
+    if (token) {
+      fetchCandleData(symbol)
+      fetchQuote(symbol, 'stock')
+    }
+  }
+
+  // Handle timeframe change
+  const handleTimeframeChange = (timeframe: string) => {
+    if (token) {
+      fetchCandleData(selectedSymbol, timeframe)
+    }
+  }
+
+  // Mock data
   const openOrders = [
     { symbol: "AAPL", qty: "100 Limit", price: "213.05", status: "Working", filled: "0%", type: "Monthly Cancel" },
     { symbol: "TSLA", qty: "50 Stop", price: "280.00", status: "Working", filled: "0%", type: "Monthly Cancel" },
-    { symbol: "WDSA", qty: "20 Limit", price: "880.00", status: "Working", filled: "25%", type: "Monthly Cancel" },
   ]
 
-  // Positions data
   const positions = [
-    { symbol: "AAPL", qty: "300", avgPrice: "198.65", last: "215.42", pl: "+$4,625.00", plPercent: "30.2%" },
-    { symbol: "MSFT", qty: "120", avgPrice: "352.10", last: "368.12", pl: "+$1,922.40", plPercent: "4.5%" },
-    { symbol: "TSLA", qty: "40", avgPrice: "274.60", last: "288.92", pl: "+$572.80", plPercent: "5.4%" },
-    { symbol: "GOOG", qty: "-3", avgPrice: "138.10", last: "141.27", pl: "-$9.51", plPercent: "2.3%" },
+    { symbol: "AAPL", qty: "300", avgPrice: "198.65", last: quote?.price?.toFixed(2) || "215.42", pl: "+$4,625.00", plPercent: "30.2%" },
     { symbol: "Cash", qty: "-", avgPrice: "-", last: "-", pl: "-", plPercent: "$2,621.27" },
   ]
 
-  // Key statistics
   const keyStats = [
-    { label: "P/E (TTM)", value: "3.321" },
-    { label: "Dividend yield", value: "0.52%" },
-    { label: "Beta", value: "1.68" },
+    { label: "Current Price", value: `$${quote?.price?.toFixed(2) || '0.00'}` },
+    { label: "Change", value: `${quote?.changePercent >= 0 ? '+' : ''}${quote?.changePercent?.toFixed(2) || '0.00'}%` },
+    { label: "Volume", value: quote?.volume?.toLocaleString() || 'N/A' },
   ]
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4"></div>
+          <p className="text-slate-400">Loading market data...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 text-white flex">
-      {/* Left Sidebar - Markets Watchlist */}
-      <WatchlistSidebar watchlist={watchlist} />
+      <WatchlistSidebar
+        watchlist={watchlist}
+        onSymbolSelect={handleSymbolSelect}
+        selectedSymbol={selectedSymbol}
+      />
 
-      {/* Main Content Area */}
       <div className="flex-1 flex flex-col bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950">
-        {/* Top Header */}
-        <TradingHeader />
+        <TradingHeader
+          symbol={selectedSymbol}
+          price={quote?.price}
+          change={quote?.change}
+          changePercent={quote?.changePercent}
+        />
 
-        {/* Chart and Right Panel Container */}
         <div className="flex-1 flex">
-          {/* Chart Section */}
           <div className="flex-1 flex flex-col">
-            <TradingChart />
+            <TradingChart
+              symbol={selectedSymbol}
+              candleData={candleData}
+              onTimeframeChange={handleTimeframeChange}
+            />
 
-            {/* Content below chart */}
             <div className="px-6 pb-6">
-              {/* Key Statistics */}
               <div className="grid grid-cols-3 gap-4 mb-6">
                 {keyStats.map((stat, idx) => (
                   <div key={idx} className="bg-transparent border border-gray-800 rounded-lg p-4">
@@ -68,11 +226,10 @@ export default function Trading() {
                 ))}
               </div>
 
-              {/* Open Orders Table */}
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-semibold">Open orders</h3>
-                  <span className="text-xs text-gray-500">3 working</span>
+                  <span className="text-xs text-gray-500">{openOrders.length} working</span>
                 </div>
                 <div className="bg-transparent border border-gray-800 rounded-lg overflow-hidden">
                   <table className="w-full text-xs">
@@ -106,7 +263,6 @@ export default function Trading() {
                 </div>
               </div>
 
-              {/* Positions Table */}
               <div>
                 <h3 className="text-sm font-semibold mb-3">Positions</h3>
                 <div className="bg-transparent border border-gray-800 rounded-lg overflow-hidden">
@@ -143,8 +299,10 @@ export default function Trading() {
             </div>
           </div>
 
-          {/* Right Order Panel */}
-          <OrderTicket />
+          <OrderTicket
+            symbol={selectedSymbol}
+            currentPrice={quote?.price}
+          />
         </div>
       </div>
     </div>

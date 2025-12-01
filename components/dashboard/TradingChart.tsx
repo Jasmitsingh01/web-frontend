@@ -6,8 +6,21 @@ import { Props as ChartProps } from "react-apexcharts"
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false })
 
-export function TradingChart() {
+interface TradingChartProps {
+    symbol?: string
+    candleData?: any[]
+    onTimeframeChange?: (timeframe: string) => void
+}
+
+export function TradingChart({ symbol = "AAPL", candleData = [], onTimeframeChange }: TradingChartProps) {
     const [activeTimeframe, setActiveTimeframe] = useState("1D")
+
+    const handleTimeframeChange = (timeframe: string) => {
+        setActiveTimeframe(timeframe)
+        if (onTimeframeChange) {
+            onTimeframeChange(timeframe)
+        }
+    }
 
     const chartOptions: ChartProps["options"] = {
         chart: {
@@ -24,7 +37,14 @@ export function TradingChart() {
                 }
             },
             background: 'transparent',
-            foreColor: '#9ca3af'
+            foreColor: '#9ca3af',
+            animations: {
+                enabled: true,
+                dynamicAnimation: {
+                    enabled: true,
+                    speed: 350
+                }
+            }
         },
         xaxis: {
             type: 'datetime',
@@ -64,8 +84,8 @@ export function TradingChart() {
     }
 
     const chartSeries = [{
-        name: 'AAPL',
-        data: [
+        name: symbol,
+        data: candleData.length > 0 ? candleData : [
             { x: new Date('2023-10-24T09:00:00').getTime(), y: [210, 212, 209, 211] },
             { x: new Date('2023-10-24T10:00:00').getTime(), y: [211, 215, 210, 214] },
             { x: new Date('2023-10-24T11:00:00').getTime(), y: [214, 218, 213, 217] },
@@ -84,7 +104,7 @@ export function TradingChart() {
                     {["1D", "5D", "1M", "6M", "YTD", "1Y", "5Y", "All"].map(period => (
                         <button
                             key={period}
-                            onClick={() => setActiveTimeframe(period)}
+                            onClick={() => handleTimeframeChange(period)}
                             className={`px-3 py-1.5 rounded text-xs font-medium transition ${activeTimeframe === period
                                 ? 'bg-gray-700 text-white'
                                 : 'text-gray-400 hover:text-white hover:bg-slate-950'
