@@ -23,6 +23,7 @@ export default function Trading() {
 
   // Dynamic data from API
   const [dashboardData, setDashboardData] = useState<any>(null)
+  const [liveWatchlist, setLiveWatchlist] = useState<any[]>([])
   const [token, setToken] = useState<string | null>(null)
 
   // Load token from localStorage
@@ -43,8 +44,22 @@ export default function Trading() {
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true)
-        const result = await api.dashboard.getData(token)
-        setDashboardData(result.dashboard)
+
+        // Fetch dashboard data and live watchlist quotes in parallel
+        const [dashboardResult, watchlistResult] = await Promise.all([
+          api.dashboard.getData(token),
+          api.market.getWatchlistQuotes(token).catch(err => {
+            console.error('Error fetching live quotes:', err)
+            return { success: false, data: [] }
+          })
+        ])
+
+        setDashboardData(dashboardResult.dashboard)
+
+        // Handle watchlist result (it might be the array directly or wrapped in success/data)
+        const quotes = Array.isArray(watchlistResult) ? watchlistResult : (watchlistResult.data || [])
+        setLiveWatchlist(quotes)
+
         setError("")
       } catch (err: any) {
         console.error('Error fetching dashboard data:', err)
@@ -68,9 +83,15 @@ export default function Trading() {
         notes: ""
       })
 
-      // Refresh dashboard data
-      const result = await api.dashboard.getData(token)
-      setDashboardData(result.dashboard)
+      // Refresh dashboard data and live quotes
+      const [dashboardResult, watchlistResult] = await Promise.all([
+        api.dashboard.getData(token),
+        api.market.getWatchlistQuotes(token).catch(err => ({ success: false, data: [] }))
+      ])
+
+      setDashboardData(dashboardResult.dashboard)
+      const quotes = Array.isArray(watchlistResult) ? watchlistResult : (watchlistResult.data || [])
+      setLiveWatchlist(quotes)
 
       setNewWatchlistSymbol("")
       setIsWatchlistModalOpen(false)
@@ -85,8 +106,14 @@ export default function Trading() {
 
     try {
       setIsLoading(true)
-      const result = await api.dashboard.getData(token)
-      setDashboardData(result.dashboard)
+      const [dashboardResult, watchlistResult] = await Promise.all([
+        api.dashboard.getData(token),
+        api.market.getWatchlistQuotes(token).catch(err => ({ success: false, data: [] }))
+      ])
+
+      setDashboardData(dashboardResult.dashboard)
+      const quotes = Array.isArray(watchlistResult) ? watchlistResult : (watchlistResult.data || [])
+      setLiveWatchlist(quotes)
     } catch (err: any) {
       console.error('Error refreshing data:', err)
     } finally {
@@ -261,12 +288,19 @@ export default function Trading() {
   }))
 
   // Format watchlist
-  const formattedWatchlist = watchlist.map((item: any) => ({
-    symbol: item.symbol,
-    name: item.symbol,
-    price: "$0.00", // You can integrate real market data here
-    change: "+0.00%"
-  }))
+  const sourceWatchlist = liveWatchlist.length > 0 ? liveWatchlist : watchlist;
+
+  const formattedWatchlist = sourceWatchlist.map((item: any) => {
+    const price = typeof item.price === 'number' ? item.price : 0;
+    const changePercent = typeof item.changePercent === 'number' ? item.changePercent : 0;
+
+    return {
+      symbol: item.symbol,
+      name: item.name || item.symbol,
+      price: `$${price.toFixed(2)}`,
+      change: `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`
+    }
+  })
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950">

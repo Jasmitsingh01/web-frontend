@@ -2,93 +2,93 @@ const GRAPHQL_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/gr
 
 // Helper function to make GraphQL requests
 async function graphqlRequest(query: string, variables?: any, token?: string) {
-    const headers: any = {
-        'Content-Type': 'application/json',
-    };
+  const headers: any = {
+    'Content-Type': 'application/json',
+  };
 
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
 
-    const response = await fetch(GRAPHQL_URL, {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-        body: JSON.stringify({
-            query,
-            variables,
-        }),
-    });
+  const response = await fetch(GRAPHQL_URL, {
+    method: 'POST',
+    headers,
+    credentials: 'include',
+    body: JSON.stringify({
+      query,
+      variables,
+    }),
+  });
 
-    const result = await response.json();
+  const result = await response.json();
 
-    if (result.errors) {
-        throw new Error(result.errors[0].message);
-    }
+  if (result.errors) {
+    throw new Error(result.errors[0].message);
+  }
 
-    return result.data;
+  return result.data;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
 // Helper function to make REST requests
 async function restRequest(endpoint: string, method: string, body?: any, token?: string, isFormData: boolean = false) {
-    const headers: any = {};
+  const headers: any = {};
 
-    if (!isFormData) {
-        headers['Content-Type'] = 'application/json';
-    }
+  if (!isFormData) {
+    headers['Content-Type'] = 'application/json';
+  }
 
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
 
-    const config: any = {
-        method,
-        headers,
-    };
+  const config: any = {
+    method,
+    headers,
+  };
 
-    if (body) {
-        config.body = isFormData ? body : JSON.stringify(body);
-    }
+  if (body) {
+    config.body = isFormData ? body : JSON.stringify(body);
+  }
 
-    const response = await fetch(`${API_URL}${endpoint}`, config);
-    const result = await response.json();
+  const response = await fetch(`${API_URL}${endpoint}`, config);
+  const result = await response.json();
 
-    if (!response.ok) {
-        throw new Error(result.message || 'Request failed');
-    }
+  if (!response.ok) {
+    throw new Error(result.message || 'Request failed');
+  }
 
-    return result;
+  return result;
 }
 
 export const graphqlApi = {
-    auth: {
-        register: async (formData: FormData) => {
-            return restRequest('/auth/register', 'POST', formData, undefined, true);
-        },
+  auth: {
+    register: async (formData: FormData) => {
+      return restRequest('/auth/register', 'POST', formData, undefined, true);
+    },
 
-        login: async (input: { email: string; password: string }) => {
-            return restRequest('/auth/login', 'POST', input);
-        },
+    login: async (input: { email: string; password: string }) => {
+      return restRequest('/auth/login', 'POST', input);
+    },
 
-        sendOTP: async (identifier: string) => {
-            // Determine if email or phone
-            const isEmail = identifier.includes('@');
-            const payload = isEmail ? { email: identifier } : { phone: identifier };
-            return restRequest('/auth/send-otp', 'POST', payload);
-        },
+    sendOTP: async (identifier: string) => {
+      // Determine if email or phone
+      const isEmail = identifier.includes('@');
+      const payload = isEmail ? { email: identifier } : { phone: identifier };
+      return restRequest('/auth/send-otp', 'POST', payload);
+    },
 
-        verifyOTP: async (identifier: string, code: string) => {
-            const isEmail = identifier.includes('@');
-            const payload = isEmail
-                ? { email: identifier, emailOtp: code }
-                : { phone: identifier, phoneOtp: code };
-            return restRequest('/auth/verify-otp', 'POST', payload);
-        },
+    verifyOTP: async (identifier: string, code: string) => {
+      const isEmail = identifier.includes('@');
+      const payload = isEmail
+        ? { email: identifier, emailOtp: code }
+        : { phone: identifier, phoneOtp: code };
+      return restRequest('/auth/verify-otp', 'POST', payload);
+    },
 
-        me: async (token: string) => {
-            const query = `
+    me: async (token: string) => {
+      const query = `
         query Me {
           me {
             id
@@ -104,11 +104,11 @@ export const graphqlApi = {
           }
         }
       `;
-            return graphqlRequest(query, {}, token);
-        },
+      return graphqlRequest(query, {}, token);
+    },
 
-        logout: async (token: string) => {
-            const query = `
+    logout: async (token: string) => {
+      const query = `
         mutation Logout {
           logout {
             success
@@ -116,13 +116,13 @@ export const graphqlApi = {
           }
         }
       `;
-            return graphqlRequest(query, {}, token);
-        },
+      return graphqlRequest(query, {}, token);
     },
+  },
 
-    dashboard: {
-        getData: async (token: string) => {
-            const query = `
+  dashboard: {
+    getData: async (token: string) => {
+      const query = `
         query Dashboard {
           dashboard {
             balance {
@@ -162,13 +162,13 @@ export const graphqlApi = {
           }
         }
       `;
-            return graphqlRequest(query, {}, token);
-        },
+      return graphqlRequest(query, {}, token);
     },
+  },
 
-    user: {
-        getProfile: async (token: string) => {
-            const query = `
+  user: {
+    getProfile: async (token: string) => {
+      const query = `
         query UserProfile {
           userProfile {
             id
@@ -193,11 +193,11 @@ export const graphqlApi = {
           }
         }
       `;
-            return graphqlRequest(query, {}, token);
-        },
+      return graphqlRequest(query, {}, token);
+    },
 
-        updateProfile: async (token: string, input: any) => {
-            const query = `
+    updateProfile: async (token: string, input: any) => {
+      const query = `
         mutation UpdateProfile($input: UpdateProfileInput!) {
           updateProfile(input: $input) {
             id
@@ -212,11 +212,11 @@ export const graphqlApi = {
           }
         }
       `;
-            return graphqlRequest(query, { input }, token);
-        },
+      return graphqlRequest(query, { input }, token);
+    },
 
-        getBalance: async (token: string) => {
-            const query = `
+    getBalance: async (token: string) => {
+      const query = `
         query UserBalance {
           userBalance {
             id
@@ -236,11 +236,11 @@ export const graphqlApi = {
           }
         }
       `;
-            return graphqlRequest(query, {}, token);
-        },
+      return graphqlRequest(query, {}, token);
+    },
 
-        getPortfolio: async (token: string) => {
-            const query = `
+    getPortfolio: async (token: string) => {
+      const query = `
         query UserPortfolio {
           userPortfolio {
             id
@@ -253,16 +253,16 @@ export const graphqlApi = {
           }
         }
       `;
-            return graphqlRequest(query, {}, token);
-        },
+      return graphqlRequest(query, {}, token);
     },
+  },
 
-    transactions: {
-        getAll: async (
-            token: string,
-            params?: { page?: number; limit?: number; type?: string; status?: string }
-        ) => {
-            const query = `
+  transactions: {
+    getAll: async (
+      token: string,
+      params?: { page?: number; limit?: number; type?: string; status?: string }
+    ) => {
+      const query = `
         query Transactions($page: Int, $limit: Int, $type: TransactionType, $status: TransactionStatus) {
           transactions(page: $page, limit: $limit, type: $type, status: $status) {
             transactions {
@@ -289,11 +289,11 @@ export const graphqlApi = {
           }
         }
       `;
-            return graphqlRequest(query, params, token);
-        },
+      return graphqlRequest(query, params, token);
+    },
 
-        getById: async (token: string, id: string) => {
-            const query = `
+    getById: async (token: string, id: string) => {
+      const query = `
         query Transaction($id: ID!) {
           transaction(id: $id) {
             id
@@ -311,11 +311,11 @@ export const graphqlApi = {
           }
         }
       `;
-            return graphqlRequest(query, { id }, token);
-        },
+      return graphqlRequest(query, { id }, token);
+    },
 
-        createDeposit: async (token: string, input: any) => {
-            const query = `
+    createDeposit: async (token: string, input: any) => {
+      const query = `
         mutation CreateDeposit($input: CreateDepositInput!) {
           createDeposit(input: $input) {
             id
@@ -327,11 +327,11 @@ export const graphqlApi = {
           }
         }
       `;
-            return graphqlRequest(query, { input }, token);
-        },
+      return graphqlRequest(query, { input }, token);
+    },
 
-        createWithdrawal: async (token: string, input: any) => {
-            const query = `
+    createWithdrawal: async (token: string, input: any) => {
+      const query = `
         mutation CreateWithdrawal($input: CreateWithdrawalInput!) {
           createWithdrawal(input: $input) {
             id
@@ -343,13 +343,13 @@ export const graphqlApi = {
           }
         }
       `;
-            return graphqlRequest(query, { input }, token);
-        },
+      return graphqlRequest(query, { input }, token);
     },
+  },
 
-    notifications: {
-        getAll: async (token: string, params?: { page?: number; limit?: number; isRead?: boolean }) => {
-            const query = `
+  notifications: {
+    getAll: async (token: string, params?: { page?: number; limit?: number; isRead?: boolean }) => {
+      const query = `
         query Notifications($page: Int, $limit: Int, $isRead: Boolean) {
           notifications(page: $page, limit: $limit, isRead: $isRead) {
             notifications {
@@ -376,11 +376,11 @@ export const graphqlApi = {
           }
         }
       `;
-            return graphqlRequest(query, params, token);
-        },
+      return graphqlRequest(query, params, token);
+    },
 
-        markAsRead: async (token: string, id: string) => {
-            const query = `
+    markAsRead: async (token: string, id: string) => {
+      const query = `
         mutation MarkNotificationAsRead($id: ID!) {
           markNotificationAsRead(id: $id) {
             id
@@ -388,11 +388,11 @@ export const graphqlApi = {
           }
         }
       `;
-            return graphqlRequest(query, { id }, token);
-        },
+      return graphqlRequest(query, { id }, token);
+    },
 
-        markAllAsRead: async (token: string) => {
-            const query = `
+    markAllAsRead: async (token: string) => {
+      const query = `
         mutation MarkAllNotificationsAsRead {
           markAllNotificationsAsRead {
             success
@@ -400,11 +400,11 @@ export const graphqlApi = {
           }
         }
       `;
-            return graphqlRequest(query, {}, token);
-        },
+      return graphqlRequest(query, {}, token);
+    },
 
-        delete: async (token: string, id: string) => {
-            const query = `
+    delete: async (token: string, id: string) => {
+      const query = `
         mutation DeleteNotification($id: ID!) {
           deleteNotification(id: $id) {
             success
@@ -412,13 +412,13 @@ export const graphqlApi = {
           }
         }
       `;
-            return graphqlRequest(query, { id }, token);
-        },
+      return graphqlRequest(query, { id }, token);
     },
+  },
 
-    watchlist: {
-        get: async (token: string) => {
-            const query = `
+  watchlist: {
+    get: async (token: string) => {
+      const query = `
         query Watchlist {
           watchlist {
             id
@@ -432,14 +432,14 @@ export const graphqlApi = {
           }
         }
       `;
-            return graphqlRequest(query, {}, token);
-        },
+      return graphqlRequest(query, {}, token);
+    },
 
-        add: async (
-            token: string,
-            input: { symbol: string; assetType: string; alertPrice?: number; notes?: string }
-        ) => {
-            const query = `
+    add: async (
+      token: string,
+      input: { symbol: string; assetType: string; alertPrice?: number; notes?: string }
+    ) => {
+      const query = `
         mutation AddToWatchlist($input: AddToWatchlistInput!) {
           addToWatchlist(input: $input) {
             id
@@ -452,11 +452,11 @@ export const graphqlApi = {
           }
         }
       `;
-            return graphqlRequest(query, { input }, token);
-        },
+      return graphqlRequest(query, { input }, token);
+    },
 
-        remove: async (token: string, symbol: string) => {
-            const query = `
+    remove: async (token: string, symbol: string) => {
+      const query = `
         mutation RemoveFromWatchlist($symbol: String!) {
           removeFromWatchlist(symbol: $symbol) {
             id
@@ -467,11 +467,11 @@ export const graphqlApi = {
           }
         }
       `;
-            return graphqlRequest(query, { symbol }, token);
-        },
+      return graphqlRequest(query, { symbol }, token);
+    },
 
-        update: async (token: string, symbol: string, input: { alertPrice?: number; notes?: string }) => {
-            const query = `
+    update: async (token: string, symbol: string, input: { alertPrice?: number; notes?: string }) => {
+      const query = `
         mutation UpdateWatchlistItem($symbol: String!, $input: UpdateWatchlistInput!) {
           updateWatchlistItem(symbol: $symbol, input: $input) {
             id
@@ -483,9 +483,36 @@ export const graphqlApi = {
           }
         }
       `;
-            return graphqlRequest(query, { symbol, input }, token);
-        },
+      return graphqlRequest(query, { symbol, input }, token);
     },
+  },
+
+  market: {
+    getQuote: async (token: string, symbol: string, assetType: string) => {
+      return restRequest(`/market/quote?symbol=${symbol}&assetType=${assetType}`, 'GET', undefined, token);
+    },
+
+    getWatchlistQuotes: async (token: string) => {
+      return restRequest('/market/watchlist-quotes', 'GET', undefined, token);
+    },
+
+    search: async (token: string, query: string) => {
+      return restRequest(`/market/search?query=${query}`, 'GET', undefined, token);
+    },
+
+    getCompanyProfile: async (token: string, symbol: string) => {
+      return restRequest(`/market/company-profile?symbol=${symbol}`, 'GET', undefined, token);
+    },
+
+    getCandles: async (token: string, symbol: string, resolution: string, from: number, to: number) => {
+      return restRequest(
+        `/market/candles?symbol=${symbol}&resolution=${resolution}&from=${from}&to=${to}`,
+        'GET',
+        undefined,
+        token
+      );
+    }
+  }
 };
 
 // Export both the old REST API (for backward compatibility) and the new GraphQL API
