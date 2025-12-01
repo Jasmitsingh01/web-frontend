@@ -8,8 +8,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { api } from '@/lib/api'
-import { auth } from '@/lib/firebase'
-import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from 'firebase/auth'
 
 type Step = 'personal' | 'verify' | 'address' | 'documents' | 'avatar'
 
@@ -28,7 +26,7 @@ export default function OpenAccountPage() {
     const [emailVerified, setEmailVerified] = useState(false)
     const [phoneVerified, setPhoneVerified] = useState(false)
     const [verificationToken, setVerificationToken] = useState('')
-    const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null)
+    const [phoneVerificationToken, setPhoneVerificationToken] = useState('')
 
     // Address
     const [address, setAddress] = useState('')
@@ -39,12 +37,17 @@ export default function OpenAccountPage() {
     const [pincode, setPincode] = useState('')
 
     // Documents
-    const [addressProof, setAddressProof] = useState<File | null>(null)
-    const [bankProof, setBankProof] = useState<File | null>(null)
-    const [otherProof, setOtherProof] = useState<File | null>(null)
+    const [identityProofType, setIdentityProofType] = useState<'pan' | 'aadhaar'>('pan')
     const [identityFront, setIdentityFront] = useState<File | null>(null)
     const [identityBack, setIdentityBack] = useState<File | null>(null)
+
+    const [addressProofType, setAddressProofType] = useState<'electricity' | 'driving_license' | 'aadhaar'>('electricity')
+    const [addressProofFront, setAddressProofFront] = useState<File | null>(null)
+    const [addressProofBack, setAddressProofBack] = useState<File | null>(null)
+
+    const [bankProof, setBankProof] = useState<File | null>(null)
     const [selfie, setSelfie] = useState<File | null>(null)
+    const [otherProof, setOtherProof] = useState<File | null>(null)
 
     // Avatar
     const [avatar, setAvatar] = useState<File | null>(null)
@@ -68,22 +71,9 @@ export default function OpenAccountPage() {
             // Send email OTP via backend
             await api.auth.sendOTP(email)
 
-            // Send phone OTP via Firebase
+            // Send phone OTP via backend
             const fullPhoneNumber = `${countryCode}${phone}`
-
-            // Initialize reCAPTCHA if not already done
-            if (!(window as any).recaptchaVerifier) {
-                (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-                    size: 'invisible',
-                    callback: () => {
-                        // reCAPTCHA solved
-                    }
-                })
-            }
-
-            const appVerifier = (window as any).recaptchaVerifier
-            const confirmation = await signInWithPhoneNumber(auth, fullPhoneNumber, appVerifier)
-            setConfirmationResult(confirmation)
+            await api.auth.sendOTP(fullPhoneNumber)
 
             setStep('verify')
         } catch (err: any) {
@@ -119,17 +109,19 @@ export default function OpenAccountPage() {
             setError('Please enter phone OTP')
             return
         }
-        if (!confirmationResult) {
-            setError('Please resend OTP')
-            return
-        }
         try {
-            await confirmationResult.confirm(phoneOtp)
-            setPhoneVerified(true)
-            setError('')
-            return true
-        } catch (err: any) {
+            const fullPhoneNumber = `${countryCode}${phone}`
+            const result = await api.auth.verifyOTP(fullPhoneNumber, phoneOtp)
+            if (result.data?.verificationToken) {
+                setPhoneVerificationToken(result.data.verificationToken)
+                setPhoneVerified(true)
+                setError('')
+                return true
+            }
             setError('Invalid phone OTP')
+            return false
+        } catch (err: any) {
+            setError(err.message || 'Failed to verify phone OTP')
             return false
         }
     }
@@ -143,10 +135,32 @@ export default function OpenAccountPage() {
     }
 
     const handleDocumentsSubmit = () => {
-        if (!addressProof || !bankProof || !identityFront || !identityBack || !selfie) {
-            setError('Please upload all required documents')
+        // Check identity proof
+        if (!identityFront) {
+            setError('Please upload Identity Proof front image')
             return
         }
+        if (identityProofType === 'aadhaar' && !identityBack) {
+            setError('Please upload Aadhaar Card back image')
+            return
+        }
+
+        // Check address proof
+        if (!addressProofFront) {
+            setError('Please upload Address Proof front image')
+            return
+        }
+        if ((addressProofType === 'aadhaar' || addressProofType === 'driving_license') && !addressProofBack) {
+            setError('Please upload Address Proof back image')
+            return
+        }
+
+        // Check other required documents
+        if (!bankProof || !selfie) {
+            setError('Please upload Bank Proof and Selfie with ID')
+            return
+        }
+
         setStep('avatar')
     }
 
@@ -173,14 +187,17 @@ export default function OpenAccountPage() {
             formData.append('pincode', pincode)
 
             formData.append('verificationToken', verificationToken)
+            formData.append('identityProofType', identityProofType)
+            formData.append('addressProofType', addressProofType)
 
             if (avatar) formData.append('avatar', avatar)
-            if (addressProof) formData.append('AddressProof', addressProof)
-            if (bankProof) formData.append('BankProof', bankProof)
-            if (otherProof) formData.append('OtherProof', otherProof)
             if (identityFront) formData.append('IdentityFront', identityFront)
             if (identityBack) formData.append('IdentityBack', identityBack)
+            if (addressProofFront) formData.append('AddressProof', addressProofFront)
+            if (addressProofBack) formData.append('AddressProofBack', addressProofBack)
+            if (bankProof) formData.append('BankProof', bankProof)
             if (selfie) formData.append('SelfieWithID', selfie)
+            if (otherProof) formData.append('OtherProof', otherProof)
 
             await api.auth.register(formData)
 
@@ -222,8 +239,6 @@ export default function OpenAccountPage() {
 
     return (
         <div className="min-h-screen flex bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 py-10">
-            {/* Hidden reCAPTCHA container */}
-            <div id="recaptcha-container"></div>
 
             <div className="flex-1 flex items-center justify-center relative overflow-hidden p-6">
                 <div className="absolute top-20 left-20 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl animate-pulse" />
@@ -428,15 +443,90 @@ export default function OpenAccountPage() {
                             )}
 
                             {step === 'documents' && (
-                                <div className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <FileUpload label="Address Proof" file={addressProof} setFile={setAddressProof} />
-                                        <FileUpload label="Bank Proof" file={bankProof} setFile={setBankProof} />
-                                        <FileUpload label="Identity Front" file={identityFront} setFile={setIdentityFront} />
-                                        <FileUpload label="Identity Back" file={identityBack} setFile={setIdentityBack} />
-                                        <FileUpload label="Selfie with ID" file={selfie} setFile={setSelfie} />
-                                        <FileUpload label="Other Proof (Optional)" file={otherProof} setFile={setOtherProof} />
+                                <div className="space-y-6">
+                                    {/* Identity Proof Section */}
+                                    <div className="space-y-3">
+                                        <Label className="text-slate-300 text-base font-semibold">Identity Proof</Label>
+                                        <div className="relative">
+                                            <select
+                                                value={identityProofType}
+                                                onChange={(e) => {
+                                                    setIdentityProofType(e.target.value as 'pan' | 'aadhaar')
+                                                    setIdentityFront(null)
+                                                    setIdentityBack(null)
+                                                }}
+                                                className="w-full h-11 bg-slate-900/50 border border-white/10 rounded-md text-white px-3 appearance-none focus:border-emerald-500/50 focus:ring-emerald-500/20 outline-none"
+                                            >
+                                                <option value="pan" className="bg-slate-900 text-white">PAN Card</option>
+                                                <option value="aadhaar" className="bg-slate-900 text-white">Aadhaar Card</option>
+                                            </select>
+                                            <ChevronDown className="absolute right-3 top-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <FileUpload
+                                                label={identityProofType === 'pan' ? 'PAN Card' : 'Aadhaar Front'}
+                                                file={identityFront}
+                                                setFile={setIdentityFront}
+                                            />
+                                            {identityProofType === 'aadhaar' && (
+                                                <FileUpload
+                                                    label="Aadhaar Back"
+                                                    file={identityBack}
+                                                    setFile={setIdentityBack}
+                                                />
+                                            )}
+                                        </div>
                                     </div>
+
+                                    {/* Address Proof Section */}
+                                    <div className="space-y-3">
+                                        <Label className="text-slate-300 text-base font-semibold">Address Proof</Label>
+                                        <div className="relative">
+                                            <select
+                                                value={addressProofType}
+                                                onChange={(e) => {
+                                                    setAddressProofType(e.target.value as 'electricity' | 'driving_license' | 'aadhaar')
+                                                    setAddressProofFront(null)
+                                                    setAddressProofBack(null)
+                                                }}
+                                                className="w-full h-11 bg-slate-900/50 border border-white/10 rounded-md text-white px-3 appearance-none focus:border-emerald-500/50 focus:ring-emerald-500/20 outline-none"
+                                            >
+                                                <option value="electricity" className="bg-slate-900 text-white">Electricity Bill</option>
+                                                <option value="driving_license" className="bg-slate-900 text-white">Driving License</option>
+                                                <option value="aadhaar" className="bg-slate-900 text-white">Aadhaar Card</option>
+                                            </select>
+                                            <ChevronDown className="absolute right-3 top-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <FileUpload
+                                                label={
+                                                    addressProofType === 'electricity' ? 'Electricity Bill' :
+                                                        addressProofType === 'driving_license' ? 'License Front' :
+                                                            'Aadhaar Front'
+                                                }
+                                                file={addressProofFront}
+                                                setFile={setAddressProofFront}
+                                            />
+                                            {(addressProofType === 'driving_license' || addressProofType === 'aadhaar') && (
+                                                <FileUpload
+                                                    label={addressProofType === 'driving_license' ? 'License Back' : 'Aadhaar Back'}
+                                                    file={addressProofBack}
+                                                    setFile={setAddressProofBack}
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Other Documents */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <FileUpload label="Bank Proof" file={bankProof} setFile={setBankProof} />
+                                        <FileUpload label="Selfie with ID" file={selfie} setFile={setSelfie} />
+                                    </div>
+
+                                    <FileUpload label="Other Proof (Optional)" file={otherProof} setFile={setOtherProof} />
+
                                     <Button onClick={handleDocumentsSubmit} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white">
                                         Next
                                     </Button>
