@@ -446,76 +446,35 @@ export default function OpenAccountPage() {
                                 <div className="space-y-6">
                                     {/* Identity Proof Section */}
                                     <div className="space-y-3">
-                                        <Label className="text-slate-300 text-base font-semibold">Identity Proof</Label>
-                                        <div className="relative">
-                                            <select
-                                                value={identityProofType}
-                                                onChange={(e) => {
-                                                    setIdentityProofType(e.target.value as 'pan' | 'aadhaar')
-                                                    setIdentityFront(null)
-                                                    setIdentityBack(null)
-                                                }}
-                                                className="w-full h-11 bg-slate-900/50 border border-white/10 rounded-md text-white px-3 appearance-none focus:border-emerald-500/50 focus:ring-emerald-500/20 outline-none"
-                                            >
-                                                <option value="pan" className="bg-slate-900 text-white">PAN Card</option>
-                                                <option value="aadhaar" className="bg-slate-900 text-white">Aadhaar Card</option>
-                                            </select>
-                                            <ChevronDown className="absolute right-3 top-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
-                                        </div>
-
+                                        <Label className="text-slate-300 text-base font-semibold">Identity Proof (PAN Card)</Label>
                                         <div className="grid grid-cols-2 gap-4">
                                             <FileUpload
-                                                label={identityProofType === 'pan' ? 'PAN Card' : 'Aadhaar Front'}
+                                                label="Front"
                                                 file={identityFront}
                                                 setFile={setIdentityFront}
                                             />
-                                            {identityProofType === 'aadhaar' && (
-                                                <FileUpload
-                                                    label="Aadhaar Back"
-                                                    file={identityBack}
-                                                    setFile={setIdentityBack}
-                                                />
-                                            )}
+                                            <FileUpload
+                                                label="Back"
+                                                file={identityBack}
+                                                setFile={setIdentityBack}
+                                            />
                                         </div>
                                     </div>
 
                                     {/* Address Proof Section */}
                                     <div className="space-y-3">
-                                        <Label className="text-slate-300 text-base font-semibold">Address Proof</Label>
-                                        <div className="relative">
-                                            <select
-                                                value={addressProofType}
-                                                onChange={(e) => {
-                                                    setAddressProofType(e.target.value as 'electricity' | 'driving_license' | 'aadhaar')
-                                                    setAddressProofFront(null)
-                                                    setAddressProofBack(null)
-                                                }}
-                                                className="w-full h-11 bg-slate-900/50 border border-white/10 rounded-md text-white px-3 appearance-none focus:border-emerald-500/50 focus:ring-emerald-500/20 outline-none"
-                                            >
-                                                <option value="electricity" className="bg-slate-900 text-white">Electricity Bill</option>
-                                                <option value="driving_license" className="bg-slate-900 text-white">Driving License</option>
-                                                <option value="aadhaar" className="bg-slate-900 text-white">Aadhaar Card</option>
-                                            </select>
-                                            <ChevronDown className="absolute right-3 top-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
-                                        </div>
-
+                                        <Label className="text-slate-300 text-base font-semibold">Address Proof (Aadhaar Card)</Label>
                                         <div className="grid grid-cols-2 gap-4">
                                             <FileUpload
-                                                label={
-                                                    addressProofType === 'electricity' ? 'Electricity Bill' :
-                                                        addressProofType === 'driving_license' ? 'License Front' :
-                                                            'Aadhaar Front'
-                                                }
+                                                label="Front"
                                                 file={addressProofFront}
                                                 setFile={setAddressProofFront}
                                             />
-                                            {(addressProofType === 'driving_license' || addressProofType === 'aadhaar') && (
-                                                <FileUpload
-                                                    label={addressProofType === 'driving_license' ? 'License Back' : 'Aadhaar Back'}
-                                                    file={addressProofBack}
-                                                    setFile={setAddressProofBack}
-                                                />
-                                            )}
+                                            <FileUpload
+                                                label="Back"
+                                                file={addressProofBack}
+                                                setFile={setAddressProofBack}
+                                            />
                                         </div>
                                     </div>
 
@@ -524,8 +483,6 @@ export default function OpenAccountPage() {
                                         <FileUpload label="Bank Proof" file={bankProof} setFile={setBankProof} />
                                         <FileUpload label="Selfie with ID" file={selfie} setFile={setSelfie} />
                                     </div>
-
-                                    <FileUpload label="Other Proof (Optional)" file={otherProof} setFile={setOtherProof} />
 
                                     <Button onClick={handleDocumentsSubmit} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white">
                                         Next
