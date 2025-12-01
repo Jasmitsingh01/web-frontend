@@ -156,8 +156,8 @@ export default function OpenAccountPage() {
         }
 
         // Check other required documents
-        if (!bankProof || !selfie) {
-            setError('Please upload Bank Proof and Selfie with ID')
+        if (!bankProof) {
+            setError('Please upload Bank Proof')
             return
         }
 
@@ -479,10 +479,7 @@ export default function OpenAccountPage() {
                                     </div>
 
                                     {/* Other Documents */}
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <FileUpload label="Bank Proof" file={bankProof} setFile={setBankProof} />
-                                        <FileUpload label="Selfie with ID" file={selfie} setFile={setSelfie} />
-                                    </div>
+                                    <FileUpload label="Bank Proof" file={bankProof} setFile={setBankProof} />
 
                                     <Button onClick={handleDocumentsSubmit} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white">
                                         Next
