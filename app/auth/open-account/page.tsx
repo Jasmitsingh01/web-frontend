@@ -187,6 +187,7 @@ export default function OpenAccountPage() {
             formData.append('pincode', pincode)
 
             formData.append('verificationToken', verificationToken)
+            formData.append('phoneVerificationToken', phoneVerificationToken)
             formData.append('identityProofType', identityProofType)
             formData.append('addressProofType', addressProofType)
 
