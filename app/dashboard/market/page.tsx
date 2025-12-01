@@ -31,21 +31,30 @@ export default function Markets() {
 
     // Get token from localStorage
     useEffect(() => {
-        const storedToken = localStorage.getItem('token')
+        const storedToken = localStorage.getItem('authToken')
+        console.log("Token from localStorage:", storedToken ? `${storedToken.substring(0, 20)}...` : "null")
         setToken(storedToken)
     }, [])
 
     // Fetch Symbol Lists (Once)
     useEffect(() => {
         const fetchSymbols = async () => {
+            console.log("fetchSymbols called, token:", token ? "exists" : "missing", "areSymbolsLoaded:", areSymbolsLoaded)
             if (!token || areSymbolsLoaded) return
 
             try {
+                console.log("Fetching symbol lists from backend...")
                 const [stocks, forex, crypto] = await Promise.all([
                     api.market.getStockSymbols(token),
                     api.market.getForexSymbols(token),
                     api.market.getCryptoSymbols(token)
                 ])
+
+                console.log("Symbol lists received:", {
+                    stocks: stocks?.data?.length || stocks?.length || 0,
+                    forex: forex?.data?.length || forex?.length || 0,
+                    crypto: crypto?.data?.length || crypto?.length || 0
+                })
 
                 // Handle API response format (responses have .data property)
                 setStockSymbols(stocks?.data || stocks || [])
@@ -65,13 +74,20 @@ export default function Markets() {
     // Fetch Market Data
     useEffect(() => {
         const fetchMarketData = async () => {
-            if (!token || !areSymbolsLoaded) return
+            if (!token) return
+
             setIsLoading(true)
+            console.log("Fetching market data for tab:", activeTab)
 
             try {
                 // 1. Fetch Major Indices (using specific symbols)
                 const indicesSymbols = ['SPY', 'QQQ', 'DIA'] // ETFs as proxies for S&P 500, Nasdaq, Dow
-                const indicesPromises = indicesSymbols.map(sym => api.market.getQuote(token, sym, 'stock'))
+                const indicesPromises = indicesSymbols.map(sym =>
+                    api.market.getQuote(token, sym, 'stock').catch(err => {
+                        console.error(`Error fetching index ${sym}:`, err)
+                        return { data: { price: 0, changePercent: 0 } }
+                    })
+                )
                 const indicesResponses = await Promise.all(indicesPromises)
 
                 const indicesData = indicesResponses.map((res: any, idx) => {
@@ -86,7 +102,7 @@ export default function Markets() {
                 setMajorIndices(indicesData)
 
                 // 2. Fetch Market Overview based on Active Tab
-                let symbolsToFetch: { symbol: string, type: string, category: string }[] = []
+                let symbolsToFetch: { symbol: string, type: string, category: string, name?: string }[] = []
 
                 if (activeTab === 'All' || activeTab === 'Stocks') {
                     // Take top 10 stocks, or use fallback popular stocks if none loaded
@@ -94,16 +110,27 @@ export default function Markets() {
                         const stocks = stockSymbols.slice(0, 10).map(s => ({
                             symbol: s.symbol,
                             type: 'stock',
-                            category: 'Stocks'
+                            category: 'Stocks',
+                            name: s.description // Use backend description
                         }))
                         symbolsToFetch = [...symbolsToFetch, ...stocks]
                     } else {
-                        // Fallback to popular stocks
-                        const fallbackStocks = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA', 'META', 'NFLX']
-                        symbolsToFetch = [...symbolsToFetch, ...fallbackStocks.map(sym => ({
-                            symbol: sym,
+                        // Fallback to popular stocks with names
+                        const fallbackStocks = [
+                            { symbol: 'AAPL', name: 'Apple Inc' },
+                            { symbol: 'MSFT', name: 'Microsoft Corp' },
+                            { symbol: 'GOOGL', name: 'Alphabet Inc' },
+                            { symbol: 'AMZN', name: 'Amazon.com Inc' },
+                            { symbol: 'TSLA', name: 'Tesla Inc' },
+                            { symbol: 'NVDA', name: 'NVIDIA Corp' },
+                            { symbol: 'META', name: 'Meta Platforms' },
+                            { symbol: 'NFLX', name: 'Netflix Inc' }
+                        ]
+                        symbolsToFetch = [...symbolsToFetch, ...fallbackStocks.map(s => ({
+                            symbol: s.symbol,
                             type: 'stock',
-                            category: 'Stocks'
+                            category: 'Stocks',
+                            name: s.name
                         }))]
                     }
                 }
@@ -114,16 +141,24 @@ export default function Markets() {
                         const crypto = cryptoSymbols.slice(0, 10).map(s => ({
                             symbol: s.symbol,
                             type: 'crypto',
-                            category: 'Crypto'
+                            category: 'Crypto',
+                            name: s.description
                         }))
                         symbolsToFetch = [...symbolsToFetch, ...crypto]
                     } else {
                         // Fallback to popular crypto
-                        const fallbackCrypto = ['BTC', 'ETH', 'BNB', 'SOL', 'ADA']
-                        symbolsToFetch = [...symbolsToFetch, ...fallbackCrypto.map(sym => ({
-                            symbol: sym,
+                        const fallbackCrypto = [
+                            { symbol: 'BTC', name: 'Bitcoin' },
+                            { symbol: 'ETH', name: 'Ethereum' },
+                            { symbol: 'BNB', name: 'Binance Coin' },
+                            { symbol: 'SOL', name: 'Solana' },
+                            { symbol: 'ADA', name: 'Cardano' }
+                        ]
+                        symbolsToFetch = [...symbolsToFetch, ...fallbackCrypto.map(s => ({
+                            symbol: s.symbol,
                             type: 'crypto',
-                            category: 'Crypto'
+                            category: 'Crypto',
+                            name: s.name
                         }))]
                     }
                 }
@@ -134,27 +169,53 @@ export default function Markets() {
                         const forex = forexSymbols.slice(0, 10).map(s => ({
                             symbol: s.symbol,
                             type: 'forex',
-                            category: 'Forex'
+                            category: 'Forex',
+                            name: s.description
                         }))
                         symbolsToFetch = [...symbolsToFetch, ...forex]
                     } else {
                         // Fallback to popular forex pairs
-                        const fallbackForex = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'USD/CHF']
-                        symbolsToFetch = [...symbolsToFetch, ...fallbackForex.map(sym => ({
-                            symbol: sym,
+                        const fallbackForex = [
+                            { symbol: 'EUR/USD', name: 'Euro / US Dollar' },
+                            { symbol: 'GBP/USD', name: 'British Pound / US Dollar' },
+                            { symbol: 'USD/JPY', name: 'US Dollar / Japanese Yen' },
+                            { symbol: 'USD/CHF', name: 'US Dollar / Swiss Franc' }
+                        ]
+                        symbolsToFetch = [...symbolsToFetch, ...fallbackForex.map(s => ({
+                            symbol: s.symbol,
                             type: 'forex',
-                            category: 'Forex'
+                            category: 'Forex',
+                            name: s.name
                         }))]
                     }
                 }
 
-                // If no symbols loaded yet, don't fetch quotes
+                // Always fetch quotes with fallback data
                 if (symbolsToFetch.length === 0) {
-                    setIsLoading(false)
-                    return
+                    // Use default fallback if no symbols at all
+                    const fallbackStocks = [
+                        { symbol: 'AAPL', name: 'Apple Inc' },
+                        { symbol: 'MSFT', name: 'Microsoft Corp' },
+                        { symbol: 'GOOGL', name: 'Alphabet Inc' },
+                        { symbol: 'AMZN', name: 'Amazon.com Inc' },
+                        { symbol: 'TSLA', name: 'Tesla Inc' }
+                    ]
+                    symbolsToFetch = fallbackStocks.map(s => ({
+                        symbol: s.symbol,
+                        type: 'stock',
+                        category: 'Stocks',
+                        name: s.name
+                    }))
                 }
 
-                const overviewPromises = symbolsToFetch.map(item => api.market.getQuote(token, item.symbol, item.type))
+                console.log(`Fetching ${symbolsToFetch.length} symbols for ${activeTab} tab`)
+
+                const overviewPromises = symbolsToFetch.map(item =>
+                    api.market.getQuote(token, item.symbol, item.type).catch(err => {
+                        console.error(`Error fetching quote for ${item.symbol}:`, err)
+                        return { data: { price: 0, change: 0, changePercent: 0 } }
+                    })
+                )
                 const overviewResponses = await Promise.all(overviewPromises)
 
                 const overviewData = overviewResponses.map((res: any, idx) => {
@@ -170,7 +231,7 @@ export default function Markets() {
 
                     return {
                         symbol: displaySymbol,
-                        category: item.category,
+                        category: item.name || item.category, // Use name from backend if available
                         price: data.price?.toFixed(2) || "0.00",
                         change: (data.change >= 0 ? "+" : "") + (data.change?.toFixed(2) || "0.00"),
                         changePercent: (data.changePercent?.toFixed(2) || "0.00") + "%",
@@ -188,7 +249,7 @@ export default function Markets() {
                         category: "Top Gainers",
                         movers: sortedByChange.slice(0, 3).map(m => ({
                             symbol: m.symbol,
-                            name: m.category,
+                            name: m.category, // This will now be the company name
                             change: m.changePercent
                         }))
                     },
@@ -196,7 +257,7 @@ export default function Markets() {
                         category: "Top Losers",
                         movers: sortedByChange.slice(-3).reverse().map(m => ({
                             symbol: m.symbol,
-                            name: m.category,
+                            name: m.category, // This will now be the company name
                             change: m.changePercent
                         }))
                     }
@@ -204,17 +265,30 @@ export default function Markets() {
 
             } catch (err) {
                 console.error("Error fetching market data:", err)
+                // Ensure we exit loading state even on error
+                setMarketOverview([])
             } finally {
                 setIsLoading(false)
             }
         }
 
+        // Safety timeout to ensure we don't get stuck in loading state
+        const timeoutId = setTimeout(() => {
+            if (isLoading) {
+                console.warn("Market data fetch timed out, forcing loading false")
+                setIsLoading(false)
+            }
+        }, 8000)
+
         fetchMarketData()
 
         const interval = setInterval(fetchMarketData, 30000)
-        return () => clearInterval(interval)
+        return () => {
+            clearInterval(interval)
+            clearTimeout(timeoutId)
+        }
 
-    }, [token, activeTab, areSymbolsLoaded, stockSymbols, forexSymbols, cryptoSymbols])
+    }, [token, activeTab, stockSymbols, forexSymbols, cryptoSymbols])
 
     // Market Stats
     const marketStats = {
