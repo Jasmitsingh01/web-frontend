@@ -28,32 +28,49 @@ export function Watchlist({ items, onAdd }: WatchlistProps) {
                 </Button>
             </div>
             <div className="space-y-3">
-                {items.map((coin) => (
-                    <div
-                        key={coin.symbol}
-                        className="p-4 bg-slate-800/30 hover:bg-slate-800/50 border border-white/5 rounded-xl transition-all cursor-pointer group"
-                    >
-                        <div className="flex justify-between items-center">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center">
-                                    <span className="font-bold text-sm text-emerald-400">{coin.symbol.slice(0, 2)}</span>
+                {items.length === 0 ? (
+                    <div className="text-center py-12">
+                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-800/50 flex items-center justify-center">
+                            <TrendingUp className="w-8 h-8 text-slate-600" />
+                        </div>
+                        <p className="text-slate-400 text-sm mb-2">No assets in your watchlist</p>
+                        <p className="text-slate-500 text-xs mb-4">Add assets to track their performance</p>
+                        <Button
+                            size="sm"
+                            className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                            onClick={onAdd}
+                        >
+                            Add Your First Asset
+                        </Button>
+                    </div>
+                ) : (
+                    items.map((coin) => (
+                        <div
+                            key={coin.symbol}
+                            className="p-4 bg-slate-800/30 hover:bg-slate-800/50 border border-white/5 rounded-xl transition-all cursor-pointer group"
+                        >
+                            <div className="flex justify-between items-center">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center">
+                                        <span className="font-bold text-sm text-emerald-400">{coin.symbol.slice(0, 2)}</span>
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-white group-hover:text-emerald-400 transition">{coin.symbol}</p>
+                                        <p className="text-xs text-slate-500">{coin.name}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="font-bold text-white group-hover:text-emerald-400 transition">{coin.symbol}</p>
-                                    <p className="text-xs text-slate-500">{coin.name}</p>
+                                <div className="text-right">
+                                    <p className="font-semibold text-white">{coin.price}</p>
+                                    <span className={`text-xs font-semibold flex items-center justify-end gap-1 ${coin.change.startsWith('-') ? 'text-red-400' : 'text-emerald-400'
+                                        }`}>
+                                        {coin.change.startsWith('-') ? <TrendingDown className="w-3 h-3" /> : <TrendingUp className="w-3 h-3" />}
+                                        {coin.change}
+                                    </span>
                                 </div>
-                            </div>
-                            <div className="text-right">
-                                <p className="font-semibold text-white">{coin.price}</p>
-                                <span className={`text-xs font-semibold flex items-center justify-end gap-1 ${coin.change.startsWith('-') ? 'text-red-400' : 'text-emerald-400'
-                                    }`}>
-                                    {coin.change.startsWith('-') ? <TrendingDown className="w-3 h-3" /> : <TrendingUp className="w-3 h-3" />}
-                                    {coin.change}
-                                </span>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    ))
+                )}
             </div>
         </div>
     )

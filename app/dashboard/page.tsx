@@ -94,7 +94,90 @@ export default function Trading() {
     }
   }
 
-  // Enhanced Chart configs with modern styling
+  // Chart period states
+  const [portfolioPeriod, setPortfolioPeriod] = useState<'1M' | '3M' | '1Y'>('1M')
+  const [depositPeriod, setDepositPeriod] = useState<'1M' | '3M' | '1Y'>('1M')
+
+  // Generate dynamic labels based on period
+  const getChartLabels = (period: '1M' | '3M' | '1Y') => {
+    const now = new Date()
+    const labels: string[] = []
+
+    if (period === '1M') {
+      // Last 30 days - show weeks
+      for (let i = 4; i >= 0; i--) {
+        const date = new Date(now)
+        date.setDate(date.getDate() - (i * 7))
+        labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }))
+      }
+    } else if (period === '3M') {
+      // Last 3 months - show months
+      for (let i = 2; i >= 0; i--) {
+        const date = new Date(now)
+        date.setMonth(date.getMonth() - i)
+        labels.push(date.toLocaleDateString('en-US', { month: 'short' }))
+      }
+    } else {
+      // Last year - show months
+      for (let i = 11; i >= 0; i--) {
+        const date = new Date(now)
+        date.setMonth(date.getMonth() - i)
+        labels.push(date.toLocaleDateString('en-US', { month: 'short' }))
+      }
+    }
+
+    return labels
+  }
+
+  // Get chart data based on period
+  const getChartData = (fullData: number[], period: '1M' | '3M' | '1Y') => {
+    if (period === '1M') {
+      return fullData.slice(-5) // Last 5 data points for 1 month
+    } else if (period === '3M') {
+      return fullData.slice(-3) // Last 3 data points for 3 months
+    } else {
+      return fullData.slice(-12) // Last 12 data points for 1 year
+    }
+  }
+
+  if (isLoading && !dashboardData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 flex items-center justify-center">
+        <div className="text-white text-xl">Loading dashboard...</div>
+      </div>
+    )
+  }
+
+  if (error && !dashboardData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 flex items-center justify-center">
+        <div className="text-red-400 text-xl">{error}</div>
+      </div>
+    )
+  }
+
+  const balance = dashboardData?.balance || { total: 0, change: "+0%", recentDeposits: 0 }
+  const activities = dashboardData?.activities || []
+  const notifications = dashboardData?.notifications || []
+  const watchlist = dashboardData?.watchlist || []
+  const pendingActions = dashboardData?.pendingActions || 0
+  const charts = dashboardData?.charts || { portfolioPerformance: [], depositActivity: [] }
+
+  // Check if we have any chart data
+  const hasPortfolioData = charts.portfolioPerformance && charts.portfolioPerformance.length > 0
+  const hasDepositData = charts.depositActivity && charts.depositActivity.length > 0
+
+  // Dynamic chart data based on selected period
+  const portfolioLabels = getChartLabels(portfolioPeriod)
+  const depositLabels = getChartLabels(depositPeriod)
+
+  const portfolioData = hasPortfolioData ? getChartData(charts.portfolioPerformance, portfolioPeriod) : []
+  const depositData = hasDepositData ? getChartData(charts.depositActivity, depositPeriod) : []
+
+  const lineChartSeries = [{ name: "Portfolio Value", data: portfolioData }]
+  const barChartSeries = [{ name: "Deposits", data: depositData }]
+
+  // Enhanced Chart configs with dynamic labels
   const lineChartOptions = {
     chart: {
       id: "line-chart",
@@ -104,7 +187,7 @@ export default function Trading() {
       sparkline: { enabled: false }
     },
     xaxis: {
-      categories: ["Jan", "Feb", "Mar", "Apr", "May"],
+      categories: portfolioLabels,
       labels: { style: { colors: "#94a3b8", fontSize: '12px' } },
       axisBorder: { show: false },
       axisTicks: { show: false }
@@ -139,7 +222,7 @@ export default function Trading() {
       background: 'transparent'
     },
     xaxis: {
-      categories: ["Jan", "Feb", "Mar", "Apr", "May"],
+      categories: depositLabels,
       labels: { style: { colors: "#94a3b8", fontSize: '12px' } },
       axisBorder: { show: false },
       axisTicks: { show: false }
@@ -158,32 +241,6 @@ export default function Trading() {
     },
     dataLabels: { enabled: false },
   }
-
-  if (isLoading && !dashboardData) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 flex items-center justify-center">
-        <div className="text-white text-xl">Loading dashboard...</div>
-      </div>
-    )
-  }
-
-  if (error && !dashboardData) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 flex items-center justify-center">
-        <div className="text-red-400 text-xl">{error}</div>
-      </div>
-    )
-  }
-
-  const balance = dashboardData?.balance || { total: 0, change: "+0%", recentDeposits: 0 }
-  const activities = dashboardData?.activities || []
-  const notifications = dashboardData?.notifications || []
-  const watchlist = dashboardData?.watchlist || []
-  const pendingActions = dashboardData?.pendingActions || 0
-  const charts = dashboardData?.charts || { portfolioPerformance: [100, 200, 300, 400, 500], depositActivity: [500, 700, 400, 900, 600] }
-
-  const lineChartSeries = [{ name: "Portfolio Value", data: charts.portfolioPerformance }]
-  const barChartSeries = [{ name: "Deposits", data: charts.depositActivity }]
 
   const verificationPending = notifications.some((n: any) => n.message?.toLowerCase().includes("verification") && !n.isDone)
 
@@ -290,9 +347,27 @@ export default function Trading() {
                 type="area"
                 actions={
                   <>
-                    <button className="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-lg text-xs font-medium">1M</button>
-                    <button className="px-3 py-1 text-slate-400 hover:bg-white/5 rounded-lg text-xs">3M</button>
-                    <button className="px-3 py-1 text-slate-400 hover:bg-white/5 rounded-lg text-xs">1Y</button>
+                    <button
+                      onClick={() => setPortfolioPeriod('1M')}
+                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${portfolioPeriod === '1M' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-400 hover:bg-white/5'
+                        }`}
+                    >
+                      1M
+                    </button>
+                    <button
+                      onClick={() => setPortfolioPeriod('3M')}
+                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${portfolioPeriod === '3M' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-400 hover:bg-white/5'
+                        }`}
+                    >
+                      3M
+                    </button>
+                    <button
+                      onClick={() => setPortfolioPeriod('1Y')}
+                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${portfolioPeriod === '1Y' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-400 hover:bg-white/5'
+                        }`}
+                    >
+                      1Y
+                    </button>
                   </>
                 }
               />
@@ -303,9 +378,27 @@ export default function Trading() {
                 type="bar"
                 actions={
                   <>
-                    <button className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg text-xs font-medium">1M</button>
-                    <button className="px-3 py-1 text-slate-400 hover:bg-white/5 rounded-lg text-xs">3M</button>
-                    <button className="px-3 py-1 text-slate-400 hover:bg-white/5 rounded-lg text-xs">1Y</button>
+                    <button
+                      onClick={() => setDepositPeriod('1M')}
+                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${depositPeriod === '1M' ? 'bg-blue-500/20 text-blue-400' : 'text-slate-400 hover:bg-white/5'
+                        }`}
+                    >
+                      1M
+                    </button>
+                    <button
+                      onClick={() => setDepositPeriod('3M')}
+                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${depositPeriod === '3M' ? 'bg-blue-500/20 text-blue-400' : 'text-slate-400 hover:bg-white/5'
+                        }`}
+                    >
+                      3M
+                    </button>
+                    <button
+                      onClick={() => setDepositPeriod('1Y')}
+                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${depositPeriod === '1Y' ? 'bg-blue-500/20 text-blue-400' : 'text-slate-400 hover:bg-white/5'
+                        }`}
+                    >
+                      1Y
+                    </button>
                   </>
                 }
               />
