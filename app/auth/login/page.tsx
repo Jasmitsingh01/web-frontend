@@ -56,11 +56,11 @@ export default function LoginPage() {
                 password: password
             })
 
-            if (result.login.success && result.login.token) {
-                localStorage.setItem('authToken', result.login.token)
+            if (result.success && result.data?.token) {
+                localStorage.setItem('authToken', result.data.token)
                 window.location.href = '/dashboard'
             } else {
-                setError(result.login.message || 'Login failed')
+                setError(result.message || 'Login failed')
                 setIsLoading(false)
             }
         } catch (err: any) {
@@ -84,10 +84,10 @@ export default function LoginPage() {
         try {
             const result = await api.auth.sendOTP(identifier)
 
-            if (result.sendOTP.success) {
+            if (result.success) {
                 setStep('verify')
             } else {
-                setError(result.sendOTP.message || 'Failed to send OTP')
+                setError(result.message || 'Failed to send OTP')
             }
         } catch (err: any) {
             setError(err.message || 'Failed to send OTP. Please try again.')
@@ -100,8 +100,8 @@ export default function LoginPage() {
         try {
             const result = await api.auth.verifyOTP(identifier, otp)
 
-            if (result.verifyOTP.success && result.verifyOTP.token) {
-                localStorage.setItem('authToken', result.verifyOTP.token)
+            if (result.success && result.data?.verificationToken) {
+                localStorage.setItem('authToken', result.data.verificationToken)
                 window.location.href = '/dashboard'
                 return true
             }
