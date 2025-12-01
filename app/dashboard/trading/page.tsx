@@ -16,10 +16,23 @@ export default function Trading() {
   const [quote, setQuote] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Get token from localStorage
+  // Get token and selected symbol from localStorage
   useEffect(() => {
     const storedToken = localStorage.getItem('token')
     setToken(storedToken)
+
+    // Check if a symbol was selected from the markets page
+    const storedSymbol = localStorage.getItem('selectedSymbol')
+    const storedAssetType = localStorage.getItem('selectedAssetType')
+
+    if (storedSymbol) {
+      setSelectedSymbol(storedSymbol)
+      setSelectedAssetType(storedAssetType || 'stock')
+
+      // Clear the stored values after reading them
+      localStorage.removeItem('selectedSymbol')
+      localStorage.removeItem('selectedAssetType')
+    }
   }, [])
 
   // Fetch watchlist with live prices
@@ -134,7 +147,7 @@ export default function Trading() {
     }, 100)
 
     return () => clearTimeout(timer)
-  }, [token])
+  }, [token, selectedSymbol, selectedAssetType])
 
   // Auto-refresh every 10 seconds
   useEffect(() => {

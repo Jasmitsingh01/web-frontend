@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { ChevronRight } from "lucide-react"
 import { Tabs } from "@/components/ui/tabs"
 import { SearchInput } from "@/components/ui/search-input"
@@ -11,6 +12,7 @@ import { Input } from "@/components/ui/input"
 import { api } from "@/lib/api"
 
 export default function Markets() {
+    const router = useRouter()
     const [activeTab, setActiveTab] = useState("All")
     const [selectedInterval, setSelectedInterval] = useState("Today")
     const [isTradeModalOpen, setIsTradeModalOpen] = useState(false)
@@ -28,6 +30,16 @@ export default function Markets() {
     const [forexSymbols, setForexSymbols] = useState<any[]>([])
     const [cryptoSymbols, setCryptoSymbols] = useState<any[]>([])
     const [areSymbolsLoaded, setAreSymbolsLoaded] = useState(false)
+
+    // Handle Trade Click - Navigate to Trading Page
+    const handleTradeClick = (symbol: string, assetType: string) => {
+        // Store the selected symbol and type in localStorage for the trading page
+        localStorage.setItem('selectedSymbol', symbol)
+        localStorage.setItem('selectedAssetType', assetType)
+
+        // Navigate to trading page
+        router.push('/dashboard/trading')
+    }
 
     // Get token from localStorage
     useEffect(() => {
@@ -93,10 +105,12 @@ export default function Markets() {
                 const indicesData = indicesResponses.map((res: any, idx) => {
                     const data = res.data || res
                     const names = ["S&P 500 (ETF)", "Nasdaq 100 (ETF)", "Dow Jones (ETF)"]
+                    const change = data.changePercent || 0
                     return {
                         name: names[idx],
                         value: data.price?.toFixed(2) || "0.00",
-                        change: (data.changePercent?.toFixed(2) || "0.00") + "%"
+                        change: (change >= 0 ? "+" : "") + change.toFixed(2) + "%",
+                        isPositive: change >= 0
                     }
                 })
                 setMajorIndices(indicesData)
@@ -290,16 +304,32 @@ export default function Markets() {
 
     }, [token, activeTab, stockSymbols, forexSymbols, cryptoSymbols])
 
-    // Market Stats
-    const marketStats = {
-        investors: "315 mn",
-        volatility: "31 pts",
-        cryptoValue: "2.5 tn",
-        timeframe: "Global Cap",
-        note: "Now 24hr figure",
-        timeRemaining: "Live",
-        taxAdvantage: "Tax-advantage account | 8 stocks and ETF available"
+    // Calculate dynamic Market Stats
+    const calculateMarketStats = () => {
+        // Calculate total crypto market cap from fetched crypto data
+        const cryptoMarketCap = marketOverview
+            .filter(item => item.pair === 'Global')
+            .reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0)
+
+        // Calculate volatility from indices
+        const volatility = majorIndices.length > 0
+            ? Math.abs(parseFloat(majorIndices[0].change) || 0)
+            : 0
+
+        return {
+            investors: "315 mn", // This would need a separate API
+            volatility: volatility.toFixed(0) + " pts",
+            cryptoValue: cryptoMarketCap > 0
+                ? (cryptoMarketCap / 1000000).toFixed(1) + " tn"
+                : "2.5 tn",
+            timeframe: "Global Cap",
+            note: "Now 24hr figure",
+            timeRemaining: "Live",
+            taxAdvantage: "Tax-advantage account | 8 stocks and ETF available"
+        }
     }
+
+    const marketStats = calculateMarketStats()
 
     // Watchlists
     const watchlists = [
@@ -309,8 +339,11 @@ export default function Markets() {
     ]
 
     const handleTrade = (item: any) => {
-        setSelectedAsset(item)
-        setIsTradeModalOpen(true)
+        // Determine asset type from the item
+        const assetType = item.type || 'stock'
+
+        // Navigate to trading page with the symbol
+        handleTradeClick(item.symbol, assetType)
     }
 
     if (isLoading && !marketOverview.length) {
@@ -426,17 +459,30 @@ export default function Markets() {
                             <p className="text-xs text-slate-400 mb-4">Market Proxies (ETFs)</p>
 
                             <div className="space-y-3">
-                                {majorIndices.map((index, idx) => (
-                                    <div key={idx} className="p-4 border border-white/10 rounded-lg bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm">
-                                        <div className="flex justify-between items-center">
-                                            <div className="text-xs text-slate-400 mb-1">{index.name}</div>
-                                            <div className={`text-xs font-medium ${index.change.includes('-') ? 'text-red-400' : 'text-emerald-400'}`}>
-                                                {index.change}
+                                {isLoading && majorIndices.length === 0 ? (
+                                    // Loading skeleton
+                                    [1, 2, 3].map((i) => (
+                                        <div key={i} className="p-4 border border-white/10 rounded-lg bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm animate-pulse">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <div className="h-3 bg-slate-700 rounded w-24"></div>
+                                                <div className="h-3 bg-slate-700 rounded w-12"></div>
                                             </div>
+                                            <div className="h-8 bg-slate-700 rounded w-32"></div>
                                         </div>
-                                        <div className="text-2xl font-bold text-white">${index.value}</div>
-                                    </div>
-                                ))}
+                                    ))
+                                ) : (
+                                    majorIndices.map((index, idx) => (
+                                        <div key={idx} className="p-4 border border-white/10 rounded-lg bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm">
+                                            <div className="flex justify-between items-center">
+                                                <div className="text-xs text-slate-400 mb-1">{index.name}</div>
+                                                <div className={`text-xs font-medium ${index.isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                    {index.change}
+                                                </div>
+                                            </div>
+                                            <div className="text-2xl font-bold text-white">${index.value}</div>
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         </div>
 
