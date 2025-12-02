@@ -1,7 +1,11 @@
+// File: web-frontend/app/dashboard/trading/page.tsx
+// UPDATED VERSION WITH WEBSOCKET SUPPORT
+
 'use client'
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { api } from "@/lib/api"
+import { useMarketWebSocket } from "@/hooks/useMarketWebSocket"
 import { WatchlistSidebar } from "@/components/dashboard/WatchlistSidebar"
 import { TradingHeader } from "@/components/dashboard/TradingHeader"
 import { TradingChart } from "@/components/dashboard/TradingChart"
@@ -18,6 +22,59 @@ export default function Trading() {
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
+  const [useWebSocket, setUseWebSocket] = useState(true)
+
+  // WebSocket connection for real-time updates
+  const { isConnected: wsConnected, error: wsError } = useMarketWebSocket({
+    symbol: selectedSymbol,
+    assetType: selectedAssetType,
+    resolution: currentTimeframe === '1D' ? '5' : currentTimeframe === '5D' ? '15' : currentTimeframe === '1M' ? '60' : 'D',
+    enabled: useWebSocket && !!token,
+    onUpdate: useCallback((update: any) => {
+      // Update quote data
+      if (update.data.quote) {
+        setQuote(update.data.quote)
+      }
+
+      // Update latest candle if available
+      if (update.data.latestCandle) {
+        setCandleData(prev => {
+          const newCandle = {
+            x: update.data.latestCandle!.timestamp,
+            y: [
+              update.data.latestCandle!.open,
+              update.data.latestCandle!.high,
+              update.data.latestCandle!.low,
+              update.data.latestCandle!.close
+            ]
+          }
+
+          // Check if we need to update the last candle or add a new one
+          if (prev.length > 0) {
+            const lastCandle = prev[prev.length - 1]
+            // If timestamps match, update the last candle (same period)
+            if (lastCandle.x === newCandle.x) {
+              return [...prev.slice(0, -1), newCandle]
+            }
+          }
+
+          // Add new candle
+          return [...prev, newCandle]
+        })
+      }
+
+      setLastUpdate(new Date())
+      setIsRefreshing(false)
+    }, [])
+  })
+
+  // Fallback to polling if WebSocket fails
+  useEffect(() => {
+    if (wsError && useWebSocket) {
+      console.warn('WebSocket error, falling back to polling:', wsError)
+      setUseWebSocket(false)
+    }
+  }, [wsError, useWebSocket])
 
   // Get token and selected symbol from localStorage
   useEffect(() => {
@@ -39,7 +96,7 @@ export default function Trading() {
   }, [])
 
   // Fetch watchlist with live prices
-  const fetchWatchlist = async () => {
+  const fetchWatchlist = useCallback(async () => {
     if (!token) return
 
     try {
@@ -58,10 +115,10 @@ export default function Trading() {
     } catch (err) {
       console.error('Error fetching watchlist:', err)
     }
-  }
+  }, [token])
 
   // Fetch candle data for chart
-  const fetchCandleData = async (symbol: string, timeframe: string = '1D') => {
+  const fetchCandleData = useCallback(async (symbol: string, timeframe: string = '1D') => {
     if (!token) return
 
     try {
@@ -112,10 +169,10 @@ export default function Trading() {
     } catch (err) {
       console.error('Error fetching candle data:', err)
     }
-  }
+  }, [token, selectedAssetType])
 
   // Fetch current quote
-  const fetchQuote = async (symbol: string, assetType: string) => {
+  const fetchQuote = useCallback(async (symbol: string, assetType: string) => {
     if (!token) return
 
     try {
@@ -124,7 +181,7 @@ export default function Trading() {
     } catch (err) {
       console.error('Error fetching quote:', err)
     }
-  }
+  }, [token])
 
   // Initial data load
   useEffect(() => {
@@ -151,11 +208,11 @@ export default function Trading() {
     }, 100)
 
     return () => clearTimeout(timer)
-  }, [token, selectedSymbol, selectedAssetType, currentTimeframe])
+  }, [token, selectedSymbol, selectedAssetType, currentTimeframe, fetchWatchlist, fetchCandleData, fetchQuote])
 
-  // Auto-refresh every 5 seconds for more real-time feel
+  // Auto-refresh with polling (fallback when WebSocket is not available)
   useEffect(() => {
-    if (!token) return
+    if (!token || (useWebSocket && wsConnected)) return // Skip polling if WebSocket is active
 
     const interval = setInterval(async () => {
       setIsRefreshing(true)
@@ -171,10 +228,10 @@ export default function Trading() {
       } finally {
         setIsRefreshing(false)
       }
-    }, 5000) // Changed from 10000 to 5000 for faster updates
+    }, 5000) // Poll every 5 seconds when WebSocket is not available
 
     return () => clearInterval(interval)
-  }, [token, selectedSymbol, selectedAssetType, currentTimeframe])
+  }, [token, selectedSymbol, selectedAssetType, currentTimeframe, useWebSocket, wsConnected, fetchWatchlist, fetchQuote, fetchCandleData])
 
   // Handle symbol selection
   const handleSymbolSelect = (symbol: string) => {
@@ -189,14 +246,6 @@ export default function Trading() {
     }
 
     setSelectedAssetType(type)
-
-    if (token) {
-      // Pass the determined type to fetchCandleData
-      // We need to update fetchCandleData to accept type as argument or rely on state update
-      // Since state update is async, better to pass it directly here, but fetchCandleData uses state
-      // So we'll trigger it in a useEffect when selectedAssetType changes, OR update fetchCandleData signature
-      // For now, let's rely on the useEffect dependency on selectedAssetType
-    }
   }
 
   // Handle timeframe change
@@ -255,10 +304,10 @@ export default function Trading() {
         <div className="px-6 py-2 border-b border-white/10 bg-slate-900/30">
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
-              <div className={`flex items-center gap-1.5 ${isRefreshing ? 'text-emerald-400' : 'text-slate-400'}`}>
-                <div className={`w-2 h-2 rounded-full ${isRefreshing ? 'bg-emerald-400 animate-pulse' : 'bg-emerald-500'}`}></div>
+              <div className={`flex items-center gap-1.5 ${wsConnected ? 'text-emerald-400' : isRefreshing ? 'text-blue-400' : 'text-slate-400'}`}>
+                <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-emerald-400 animate-pulse' : isRefreshing ? 'bg-blue-400 animate-pulse' : 'bg-slate-500'}`}></div>
                 <span className="font-medium">
-                  {isRefreshing ? 'Updating...' : 'Live Data'}
+                  {wsConnected ? 'Real-time (WebSocket)' : isRefreshing ? 'Updating...' : 'Live Data (Polling)'}
                 </span>
               </div>
               {lastUpdate && (
@@ -266,9 +315,14 @@ export default function Trading() {
                   • Last updated: {lastUpdate.toLocaleTimeString()}
                 </span>
               )}
+              {wsError && !wsConnected && (
+                <span className="text-amber-500">
+                  • WebSocket unavailable
+                </span>
+              )}
             </div>
             <div className="text-slate-500">
-              Auto-refresh: 5s
+              {wsConnected ? 'Updates: ~2s' : 'Auto-refresh: 5s'}
             </div>
           </div>
         </div>

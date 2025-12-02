@@ -46,6 +46,7 @@ async function restRequest(endpoint: string, method: string, body?: any, token?:
   const config: any = {
     method,
     headers,
+    credentials: 'include', // Include cookies in requests
   };
 
   if (body) {
