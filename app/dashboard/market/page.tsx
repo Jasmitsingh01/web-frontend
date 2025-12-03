@@ -10,6 +10,7 @@ import { Modal } from "@/components/ui/modal"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { api } from "@/lib/api"
+import CryptoSymbolsList from "@/components/examples/CryptoSymbolsList"
 
 export default function Markets() {
     const router = useRouter()
@@ -380,42 +381,52 @@ export default function Markets() {
                             {/* Tabs */}
                             <div className="mb-4">
                                 <Tabs
-                                    tabs={["All", "Stocks", "Crypto"]}
+                                    tabs={["All", "Stocks", "Crypto", "Browse Crypto"]}
                                     activeTab={activeTab}
                                     onTabChange={setActiveTab}
                                 />
                             </div>
 
-                            {/* Search Bar */}
-                            <div className="mb-4">
-                                <SearchInput placeholder="Search symbols, pairs, or token" />
-                            </div>
-
-                            {/* Interval Filters */}
-                            <div className="flex items-center gap-2 mb-4">
-                                <span className="text-xs text-slate-400">Interval:</span>
-                                <div className="flex flex-wrap gap-1">
-                                    {["Today", "1W", "1M", "3M", "6M", "1Y", "All", "Max"].map((interval) => (
-                                        <button
-                                            key={interval}
-                                            onClick={() => setSelectedInterval(interval)}
-                                            className={`px-3 py-1 rounded text-xs font-medium transition ${selectedInterval === interval
-                                                ? 'bg-emerald-500 text-white hover:bg-emerald-500/90'
-                                                : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
-                                                }`}
-                                        >
-                                            {interval}
-                                        </button>
-                                    ))}
+                            {/* Conditional Content Based on Active Tab */}
+                            {activeTab === "Browse Crypto" ? (
+                                // Show Crypto Symbols Browser
+                                <div className="mt-6">
+                                    <CryptoSymbolsList />
                                 </div>
-                            </div>
+                            ) : (
+                                <>
+                                    {/* Search Bar */}
+                                    <div className="mb-4">
+                                        <SearchInput placeholder="Search symbols, pairs, or token" />
+                                    </div>
 
-                            {/* Market Overview Table */}
-                            <MarketTable items={marketOverview} onAction={handleTrade} />
+                                    {/* Interval Filters */}
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <span className="text-xs text-slate-400">Interval:</span>
+                                        <div className="flex flex-wrap gap-1">
+                                            {["Today", "1W", "1M", "3M", "6M", "1Y", "All", "Max"].map((interval) => (
+                                                <button
+                                                    key={interval}
+                                                    onClick={() => setSelectedInterval(interval)}
+                                                    className={`px-3 py-1 rounded text-xs font-medium transition ${selectedInterval === interval
+                                                        ? 'bg-emerald-500 text-white hover:bg-emerald-500/90'
+                                                        : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
+                                                        }`}
+                                                >
+                                                    {interval}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
 
-                            <p className="text-xs text-slate-500 mt-3">
-                                This information may be delayed 15-20 minutes on various services.
-                            </p>
+                                    {/* Market Overview Table */}
+                                    <MarketTable items={marketOverview} onAction={handleTrade} />
+
+                                    <p className="text-xs text-slate-500 mt-3">
+                                        This information may be delayed 15-20 minutes on various services.
+                                    </p>
+                                </>
+                            )}
                         </div>
 
                         {/* Top Movers by Asset */}

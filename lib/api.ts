@@ -537,6 +537,32 @@ export const graphqlApi = {
     getCryptoSymbols: async (token: string, exchange: string = 'BINANCE') => {
       return restRequest(`/market/crypto/symbols?exchange=${exchange}`, 'GET', undefined, token);
     }
+  },
+
+  indianStocks: {
+    getAll: async (token: string) => {
+      return restRequest('/indian-stocks/all', 'GET', undefined, token);
+    },
+
+    getByExchange: async (token: string, exchange: 'NSE' | 'BSE') => {
+      return restRequest(`/indian-stocks/exchange/${exchange}`, 'GET', undefined, token);
+    },
+
+    search: async (token: string, query: string, limit: number = 50) => {
+      return restRequest(`/indian-stocks/search?q=${query}&limit=${limit}`, 'GET', undefined, token);
+    },
+
+    getActiveNSE: async (token: string) => {
+      return restRequest('/indian-stocks/active-nse', 'GET', undefined, token);
+    },
+
+    getStats: async (token: string) => {
+      return restRequest('/indian-stocks/stats', 'GET', undefined, token);
+    },
+
+    getBySymbol: async (token: string, symbol: string) => {
+      return restRequest(`/indian-stocks/symbol/${symbol}`, 'GET', undefined, token);
+    }
   }
 };
 
