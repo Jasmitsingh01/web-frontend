@@ -3,10 +3,109 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { api } from '@/lib/api';
+import { Loader2 } from 'lucide-react';
+
+// Note: In Next.js 15+, params is a Promise and must be unwrapped with React.use()
+
+// Trending Stocks Widget Component
+function TrendingStocksWidget() {
+    const { token } = useAuth();
+    const [trendingStocks, setTrendingStocks] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function fetchTrendingStocks() {
+            if (!token) return;
+            
+            try {
+                setLoading(true);
+                const response = await api.news.getTrendingStocks(token);
+                if (response.success && response.data) {
+                    setTrendingStocks(response.data.slice(0, 4)); // Show top 4
+                }
+            } catch (error) {
+                console.error('Error fetching trending stocks:', error);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        fetchTrendingStocks();
+    }, [token]);
+
+    return (
+        <div className="bg-slate-900/80 rounded-lg p-4 border border-slate-700/50">
+            <div className="flex items-center justify-between mb-4">
+                <h3 className="text-white font-semibold text-sm">Trending Stocks</h3>
+                <Link href="/dashboard/market" className="text-emerald-400 text-xs hover:text-emerald-300 transition">
+                    See all
+                </Link>
+            </div>
+            
+            {loading ? (
+                <div className="space-y-3">
+                    {[...Array(4)].map((_, idx) => (
+                        <div key={idx} className="animate-pulse flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="h-8 w-8 bg-slate-700 rounded"></div>
+                                <div>
+                                    <div className="h-3 bg-slate-700 rounded w-12 mb-1"></div>
+                                    <div className="h-2 bg-slate-700 rounded w-16"></div>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <div className="h-3 bg-slate-700 rounded w-16 mb-1"></div>
+                                <div className="h-2 bg-slate-700 rounded w-12"></div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : trendingStocks.length > 0 ? (
+                <div className="space-y-3">
+                    {trendingStocks.map((stock, idx) => (
+                        <div key={stock.symbol} className="flex items-center justify-between group hover:bg-slate-800/50 p-2 rounded transition">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded flex items-center justify-center text-white text-xs font-bold">
+                                    {stock.symbol.charAt(0)}
+                                </div>
+                                <div>
+                                    <div className="text-white text-sm font-medium">{stock.symbol}</div>
+                                    <div className="text-slate-400 text-xs truncate max-w-[100px]">
+                                        {stock.name || stock.symbol}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-white text-sm font-medium">
+                                    ${stock.price?.toFixed(2) || '0.00'}
+                                </div>
+                                <div className={`text-xs font-medium ${
+                                    (stock.changePercent || 0) >= 0 
+                                        ? 'text-emerald-400' 
+                                        : 'text-red-400'
+                                }`}>
+                                    {(stock.changePercent || 0) >= 0 ? '+' : ''}
+                                    {(stock.changePercent || 0).toFixed(2)}%
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <div className="text-center py-6">
+                    <div className="text-slate-400 text-sm">No trending stocks available</div>
+                </div>
+            )}
+        </div>
+    );
+}
 
 // TypeScript Interfaces
 interface Article {
+    id: number;
     slug: string;
     category: string;
     source: string;
@@ -19,146 +118,241 @@ interface Article {
     readTime: number;
     heroImage: string;
     tags: string[];
+    uuid?: string;
+    headline: string;
+    summary: string;
+    datetime: number;
+    image: string;
+    url: string;
+    related: string;
 }
 
 interface RelatedArticle {
+    id: number;
     slug: string;
     title: string;
     excerpt: string;
+    category: string;
 }
 
-// Mock articles database
-const articlesDatabase: Article[] = [
-    {
-        slug: 'tech-stocks-rally-ai-optimism',
-        category: 'CRYPTO',
-        source: 'CoinDesk',
-        time: '3h ago',
-        title: 'Tech stocks extend rally as AI optimism lifts broader US markets',
-        description: 'Major US indexes have logged their strongest gains this year after bank-lending data. Chipmakers and cloud-based companies in broad-based rally to sustain price momentum.',
-        content: 'The technology sector experienced a significant surge today as artificial intelligence developments continue to drive investor enthusiasm. Major chipmakers including NVIDIA, AMD, and Intel saw substantial gains, with the broader tech-heavy NASDAQ index climbing over 2.5% in early trading. Market analysts attribute this rally to a combination of factors, including stronger-than-expected earnings reports from key tech companies, positive sentiment around AI adoption across industries, and improved bank lending data that suggests continued economic resilience. Cloud computing giants such as Amazon Web Services, Microsoft Azure, and Google Cloud also contributed to the rally, with their parent companies posting gains between 3-4%. The sustained momentum in tech stocks has lifted broader market indices, with the S&P 500 reaching new yearly highs. Investors remain optimistic about the long-term growth potential of AI-driven technologies, despite concerns about valuation levels in some segments of the market.',
-        author: 'Sarah Johnson',
-        publishDate: 'November 12, 2024',
-        readTime: 5,
-        heroImage: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1200&h=600&fit=crop',
-        tags: ['Analysis', 'Tech', 'USA', 'AI', 'Markets']
-    },
-    {
-        slug: 'dollar-dips-softer-cpi',
-        category: 'FOREX',
-        source: 'Forex.com',
-        time: '6h ago',
-        title: 'Dollar dips after softer-than-expected CPI; euro and yen edge higher',
-        description: 'Federal Reserve officials continues at ongoing debate surrounding discounting risk sentiment and weighing on macro releases.',
-        content: 'The US dollar weakened against major currencies following the release of softer-than-expected Consumer Price Index (CPI) data, which showed inflation continuing to moderate. The euro gained 0.8% against the dollar, while the Japanese yen strengthened by 0.6%. The CPI report revealed that core inflation rose by just 0.2% month-over-month, below the consensus estimate of 0.3%, suggesting that the Federal Reserve\'s aggressive rate hiking campaign is having the desired effect. Currency traders are now reassessing their expectations for future Fed policy, with many analysts predicting that the central bank may pause its rate increases sooner than previously anticipated. The softer inflation data has also boosted risk sentiment across global markets, with investors rotating into higher-yielding assets. European Central Bank officials have indicated they remain committed to their own tightening cycle, which has provided additional support for the euro.',
-        author: 'Michael Chen',
-        publishDate: 'November 11, 2024',
-        readTime: 4,
-        heroImage: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1200&h=600&fit=crop',
-        tags: ['Analysis', 'EUR', 'USD', 'Forex', 'CPI']
-    },
-    {
-        slug: 'bitcoin-holds-60k-etf-inflows',
-        category: 'STOCKS',
-        source: 'Bloomberg',
-        time: '12h ago',
-        title: 'Bitcoin holds above $60k as ETF inflows offset profit-taking',
-        description: 'Sustainable rally; persistent investor that takes initiative to remain bullish even on the back of Bitcoin spot ETF proving to be short-lived, thus we expect...',
-        content: 'Bitcoin maintained its position above the $60,000 threshold despite some profit-taking pressure, as continued inflows into spot Bitcoin ETFs provided strong support. The leading cryptocurrency has shown remarkable resilience in recent weeks, with institutional investors demonstrating sustained interest through ETF products. Data from multiple ETF providers shows net inflows exceeding $500 million over the past week, indicating that institutional demand remains robust. While some retail investors have taken profits at current levels, the steady institutional buying has prevented any significant price decline. Market analysts note that the current price action suggests a healthy consolidation phase, with Bitcoin establishing a new support level around $58,000. On-chain metrics also paint a bullish picture, with long-term holders continuing to accumulate and exchange reserves declining, both typically positive indicators for future price appreciation.',
-        author: 'David Martinez',
-        publishDate: 'November 8, 2024',
-        readTime: 6,
-        heroImage: 'https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=1200&h=600&fit=crop',
-        tags: ['Bitcoin', 'Crypto', 'ETF', 'Markets']
-    },
-    {
-        slug: 'asian-markets-mixed-inflation',
-        category: 'CRYPTO',
-        source: 'Market Watch',
-        time: '18h ago',
-        title: 'Asian stock markets see mixed open as core data dampens trading inflation',
-        description: 'Investor Fears: persistent investor that have caused declines in nasdaq before consecutive trading Asian weekly sentiment and volatility',
-        content: 'Asian equity markets opened with mixed sentiment as investors digested overnight inflation data from the United States and assessed its implications for regional monetary policy. Japan\'s Nikkei 225 edged lower by 0.3%, while Hong Kong\'s Hang Seng index gained 0.5%. Chinese mainland markets showed resilience, with the Shanghai Composite rising 0.7% on hopes of additional stimulus measures from Beijing. The mixed performance reflects ongoing uncertainty about the trajectory of global interest rates and their impact on Asian economies. Traders are particularly focused on upcoming central bank meetings in the region, with the Bank of Japan expected to maintain its ultra-loose monetary policy stance while other regional central banks may continue tightening. Currency movements also influenced trading, with the yen weakening slightly against the dollar, providing some support to Japanese exporters.',
-        author: 'Li Wei',
-        publishDate: 'November 6, 2024',
-        readTime: 4,
-        heroImage: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1200&h=600&fit=crop',
-        tags: ['Markets', 'Asia', 'Inflation', 'Stocks']
+// Helper function to format relative time
+const formatRelativeTime = (datetime: number) => {
+    const now = Date.now() / 1000
+    const diff = now - datetime
+    const hours = Math.floor(diff / 3600)
+    const days = Math.floor(diff / 86400)
+    
+    if (days > 0) return `${days}d ago`
+    if (hours > 0) return `${hours}h ago`
+    return "Just now"
+}
+
+// Function to fetch article by slug from API
+async function fetchArticleBySlug(slug: string, token: string): Promise<Article | null> {
+    try {
+        console.log('🔍 [fetchArticleBySlug] Looking for article with slug:', slug);
+        
+        // Extract ID from slug (supports both old news-{id} and new title-based formats)
+        let articleId;
+        
+        // Try new format first: title-words-{id}
+        const newFormatMatch = slug.match(/-(\d+)$/);
+        if (newFormatMatch) {
+            articleId = newFormatMatch[1];
+        } else {
+            // Fallback to old format: news-{id}
+            const oldFormatMatch = slug.match(/^news-(\d+)$/);
+            if (oldFormatMatch) {
+                articleId = oldFormatMatch[1];
+            } else {
+                console.log('❌ [fetchArticleBySlug] Invalid slug format:', slug);
+                return null;
+            }
+        }
+        console.log('📋 [fetchArticleBySlug] Extracted article ID:', articleId);
+        
+        const response = await api.news.getNewsById(token, slug); // Pass the full slug to the API
+        console.log('✅ [fetchArticleBySlug] API response:', response);
+        
+        if (!response.success || !response.data) {
+            console.log('❌ [fetchArticleBySlug] Article not found or API error');
+            return null;
+        }
+        
+        const articleData = response.data;
+        
+        // Transform API response to match Article interface
+        const article: Article = {
+            id: articleData.id,
+            slug: slug,
+            category: articleData.category,
+            source: articleData.source,
+            time: formatRelativeTime(articleData.datetime),
+            title: articleData.headline || articleData.title,
+            description: articleData.summary || articleData.description,
+            content: articleData.content,
+            author: articleData.author,
+            publishDate: articleData.publishDate,
+            readTime: articleData.readTime,
+            heroImage: articleData.heroImage || articleData.image,
+            tags: articleData.tags || [],
+            uuid: articleData.uuid,
+            headline: articleData.headline,
+            summary: articleData.summary,
+            datetime: articleData.datetime,
+            image: articleData.image,
+            url: articleData.url,
+            related: articleData.related
+        };
+        
+        console.log('✅ [fetchArticleBySlug] Transformed article:', article);
+        return article;
+    } catch (error: any) {
+        console.error('❌ [fetchArticleBySlug] Error fetching article:', error);
+        return null;
     }
-];
-
-// Mock function to fetch article by slug
-async function fetchArticleBySlug(slug: string): Promise<Article | null> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    const article = articlesDatabase.find(a => a.slug === slug);
-    return article || null;
 }
 
-// Mock function to fetch related articles
-async function fetchRelatedArticles(currentSlug: string, category: string): Promise<RelatedArticle[]> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    return articlesDatabase
-        .filter(a => a.slug !== currentSlug && a.category === category)
-        .slice(0, 3)
-        .map(a => ({
-            slug: a.slug,
-            title: a.title,
-            excerpt: a.description.substring(0, 100) + '...'
-        }));
+// Function to fetch related articles from API
+async function fetchRelatedArticles(currentId: number, category: string, token: string): Promise<RelatedArticle[]> {
+    try {
+        console.log('🔍 [fetchRelatedArticles] Fetching related articles for category:', category);
+        
+        let response;
+        
+        // Fetch articles based on category
+        switch (category.toLowerCase()) {
+            case 'crypto':
+                response = await api.news.getCryptoNews(token, 10);
+                break;
+            case 'forex':
+                response = await api.news.getForexNews(token, 10);
+                break;
+            case 'stocks':
+                response = await api.news.getStockNews(token, { limit: 10 });
+                break;
+            default:
+                response = await api.news.getMarketNews(token, { limit: 10 });
+        }
+        
+        console.log('✅ [fetchRelatedArticles] API response:', response);
+        
+        if (!response.success || !response.data) {
+            console.log('❌ [fetchRelatedArticles] No related articles found');
+            return [];
+        }
+        
+        // Filter out current article and transform to RelatedArticle format
+        const relatedArticles = response.data
+            .filter((article: any) => article.id !== currentId)
+            .slice(0, 3)
+            .map((article: any) => ({
+                id: article.id,
+                slug: article.slug || `news-${article.id}`, // Use API-provided slug or fallback
+                title: article.headline,
+                excerpt: (article.summary || article.description || '').substring(0, 100) + '...',
+                category: article.category
+            }));
+        
+        console.log('✅ [fetchRelatedArticles] Transformed related articles:', relatedArticles);
+        return relatedArticles;
+    } catch (error: any) {
+        console.error('❌ [fetchRelatedArticles] Error fetching related articles:', error);
+        return [];
+    }
 }
 
 // Page Component
-export default function NewsArticle({ params }: { params: { slug: string } }) {
+export default function NewsArticle({ params }: { params: Promise<{ slug: string }> }) {
+    // Unwrap the params Promise using React.use()
+    const { slug } = use(params);
+    const { token, isLoading: authLoading } = useAuth();
+    
     const [article, setArticle] = useState<Article | null>(null);
     const [relatedArticles, setRelatedArticles] = useState<RelatedArticle[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string>('');
 
     useEffect(() => {
         async function loadData() {
+            if (!token || authLoading) {
+                console.log('🔒 [loadData] Waiting for authentication...');
+                return;
+            }
+            
             try {
-                const articleData = await fetchArticleBySlug(params.slug);
+                console.log('🚀 [loadData] Starting to load article data for slug:', slug);
+                setLoading(true);
+                setError('');
+                
+                const articleData = await fetchArticleBySlug(slug, token);
 
                 if (!articleData) {
+                    console.log('❌ [loadData] Article not found, redirecting to 404');
                     notFound();
                     return;
                 }
 
                 setArticle(articleData);
+                console.log('✅ [loadData] Article loaded successfully');
 
-                const related = await fetchRelatedArticles(params.slug, articleData.category);
+                // Fetch related articles
+                const related = await fetchRelatedArticles(articleData.id, articleData.category, token);
                 setRelatedArticles(related);
-            } catch (error) {
-                console.error('Error loading article:', error);
+                console.log('✅ [loadData] Related articles loaded');
+            } catch (error: any) {
+                console.error('❌ [loadData] Error loading article:', error);
+                setError(error.message || 'Failed to load article');
             } finally {
                 setLoading(false);
+                console.log('🏁 [loadData] Load completed');
             }
         }
 
         loadData();
-    }, [params.slug]);
+    }, [slug, token, authLoading]);
 
-    if (loading) {
+    // Show loading state while authenticating or loading article
+    if (authLoading || loading) {
         return (
-            <div className="min-h-screenbg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 flex items-center justify-center">
+            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4"></div>
-                    <p className="text-slate-400">Loading article...</p>
+                    <Loader2 className="h-12 w-12 animate-spin text-emerald-500 mx-auto mb-4" />
+                    <p className="text-slate-400">
+                        {authLoading ? 'Authenticating...' : 'Loading article...'}
+                    </p>
                 </div>
             </div>
         );
     }
 
+    // Show error state
+    if (error) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 flex items-center justify-center">
+                <div className="text-center max-w-md mx-auto p-6">
+                    <div className="text-red-400 text-6xl mb-4">⚠️</div>
+                    <h1 className="text-2xl font-bold text-white mb-2">Error Loading Article</h1>
+                    <p className="text-slate-400 mb-4">{error}</p>
+                    <Link 
+                        href="/dashboard/news"
+                        className="inline-block px-6 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition"
+                    >
+                        Back to News
+                    </Link>
+                </div>
+            </div>
+        );
+    }
+
+    // Redirect to 404 if no article found
     if (!article) {
         notFound();
         return null;
     }
 
     return (
-        <div className="min-h-screenbg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950">
+        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950">
             {/* Header */}
             <header className="border-b border-white/10 px-6 py-4 bg-slate-900/50">
                 <div className="flex items-center justify-between max-w-7xl mx-auto">
@@ -240,29 +434,8 @@ export default function NewsArticle({ params }: { params: { slug: string } }) {
 
                     {/* Right Sidebar */}
                     <aside className="w-80 space-y-6">
-                        {/* Stock Ticker Widget */}
-                        <div className="border border-white/10 rounded-lg p-4 bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm">
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="text-sm font-medium text-white">Related Stocks</span>
-                                <button className="text-xs text-emerald-400 hover:underline">View Chart</button>
-                            </div>
-                            <div className="flex gap-2 mt-4">
-                                <button className="flex-1 px-3 py-2 border border-white/10 rounded text-sm text-slate-300 hover:bg-white/5 transition">
-                                    NVDA
-                                </button>
-                                <button className="flex-1 px-3 py-2 border border-white/10 rounded text-sm text-slate-300 hover:bg-white/5 transition">
-                                    MSFT
-                                </button>
-                                <button className="flex-1 px-3 py-2 bg-emerald-500 text-white rounded text-sm hover:bg-emerald-500/90 transition">
-                                    GOOGL
-                                </button>
-                            </div>
-                            <div className="flex gap-2 mt-2">
-                                <button className="px-3 py-2 border border-white/10 rounded text-sm text-slate-300 hover:bg-white/5 transition">
-                                    AAPL
-                                </button>
-                            </div>
-                        </div>
+                        {/* Trending Stocks Widget */}
+                        <TrendingStocksWidget />
 
                         {/* Related Articles */}
                         <div className="space-y-4">
@@ -287,14 +460,24 @@ export default function NewsArticle({ params }: { params: { slug: string } }) {
                         </div>
 
                         {/* Newsletter Signup */}
-                        <div className="border border-white/10 rounded-lg p-4 bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm">
-                            <h3 className="text-sm font-semibold mb-2 text-white">Stay Updated</h3>
-                            <p className="text-xs text-slate-400 mb-3">
-                                Get the latest market news delivered to your inbox.
+                        <div className="bg-gradient-to-br from-emerald-900/30 to-emerald-800/20 rounded-lg p-4 border border-emerald-500/20">
+                            <h3 className="text-white font-semibold text-sm mb-2">Stay Updated</h3>
+                            <p className="text-slate-300 text-xs mb-4">
+                                Get the latest market news and analysis delivered to your inbox.
                             </p>
-                            <button className="w-full px-4 py-2 bg-emerald-500 text-white rounded text-sm hover:bg-emerald-500/90 transition">
-                                Subscribe
-                            </button>
+                            <div className="space-y-2">
+                                <input 
+                                    type="email" 
+                                    placeholder="Enter your email"
+                                    className="w-full px-3 py-2 bg-slate-800/50 border border-slate-600 rounded text-white text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50"
+                                />
+                                <button className="w-full px-4 py-2 bg-emerald-500 text-white rounded text-sm font-medium hover:bg-emerald-600 transition">
+                                    Subscribe
+                                </button>
+                            </div>
+                            <p className="text-slate-400 text-xs mt-2">
+                                No spam, unsubscribe anytime.
+                            </p>
                         </div>
                     </aside>
                 </div>

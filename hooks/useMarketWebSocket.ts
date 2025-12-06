@@ -1,203 +1,208 @@
-'use client'
-
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { useStockLiveData } from './useStockLiveData'
+import { useBinanceCrypto } from './useBinanceCrypto'
+import { useForexLiveData } from './useForexLiveData'
 
 interface MarketUpdate {
-    type: 'market_update'
-    symbol: string
-    assetType: string
-    data: {
-        quote: {
-            symbol: string
-            price: number
-            change: number
-            changePercent: number
-            high: number
-            low: number
-            open: number
-            previousClose: number
-            timestamp: number
-        }
-        latestCandle?: {
-            timestamp: number
-            open: number
-            high: number
-            low: number
-            close: number
-            volume: number
-        }
-        timestamp: number
+  type: 'quote' | 'candle'
+  data: {
+    quote?: {
+      price: number
+      change: number
+      changePercent: number
+      volume?: number
+      high?: number
+      low?: number
     }
+    latestCandle?: {
+      timestamp: number
+      open: number
+      high: number
+      low: number
+      close: number
+      volume?: number
+    }
+  }
 }
 
-interface WebSocketMessage {
-    type: string
-    [key: string]: any
-}
-
-interface UseMarketWebSocketOptions {
-    symbol: string
-    assetType: string
-    resolution?: string
-    enabled?: boolean
-    onUpdate?: (update: MarketUpdate) => void
+interface UseMarketWebSocketProps {
+  symbol: string
+  assetType: 'stock' | 'crypto' | 'forex'
+  resolution?: string
+  enabled?: boolean
+  onUpdate?: (update: MarketUpdate) => void
+  onConnect?: () => void
+  onDisconnect?: () => void
+  onError?: (error: Error) => void
 }
 
 export function useMarketWebSocket({
-    symbol,
-    assetType,
-    resolution = '5',
-    enabled = true,
-    onUpdate
-}: UseMarketWebSocketOptions) {
-    const [isConnected, setIsConnected] = useState(false)
-    const [lastUpdate, setLastUpdate] = useState<MarketUpdate | null>(null)
-    const [error, setError] = useState<string | null>(null)
+  symbol,
+  assetType,
+  resolution = '5',
+  enabled = true,
+  onUpdate,
+  onConnect,
+  onDisconnect,
+  onError
+}: UseMarketWebSocketProps) {
+  const [isConnected, setIsConnected] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
 
-    const wsRef = useRef<WebSocket | null>(null)
-    const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-    const reconnectAttempts = useRef(0)
-    const maxReconnectAttempts = 5
-    const reconnectDelay = 3000
+  // Store callbacks in refs
+  const callbacksRef = useRef({ onUpdate, onConnect, onDisconnect, onError })
+  
+  useEffect(() => {
+    callbacksRef.current = { onUpdate, onConnect, onDisconnect, onError }
+  }, [onUpdate, onConnect, onDisconnect, onError])
 
-    const connect = useCallback(() => {
-        if (!enabled) return
-
-        try {
-            // Get WebSocket URL from environment or use default
-            const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080/ws/market'
-
-            console.log('Connecting to WebSocket:', wsUrl)
-            const ws = new WebSocket(wsUrl)
-
-            ws.onopen = () => {
-                console.log('WebSocket connected')
-                setIsConnected(true)
-                setError(null)
-                reconnectAttempts.current = 0
-
-                // Subscribe to symbol
-                ws.send(JSON.stringify({
-                    type: 'subscribe',
-                    symbol,
-                    assetType,
-                    resolution
-                }))
-            }
-
-            ws.onmessage = (event) => {
-                try {
-                    const message: WebSocketMessage = JSON.parse(event.data)
-
-                    if (message.type === 'market_update') {
-                        const update = message as MarketUpdate
-                        setLastUpdate(update)
-                        onUpdate?.(update)
-                    } else if (message.type === 'error') {
-                        console.error('WebSocket error message:', message.message)
-                        setError(message.message)
-                    }
-                } catch (err) {
-                    console.error('Error parsing WebSocket message:', err)
-                }
-            }
-
-            ws.onerror = (event) => {
-                console.error('WebSocket error:', event)
-                setError('WebSocket connection error')
-            }
-
-            ws.onclose = () => {
-                console.log('WebSocket disconnected')
-                setIsConnected(false)
-
-                // Attempt to reconnect
-                if (enabled && reconnectAttempts.current < maxReconnectAttempts) {
-                    reconnectAttempts.current++
-                    console.log(`Reconnecting... Attempt ${reconnectAttempts.current}/${maxReconnectAttempts}`)
-
-                    reconnectTimeoutRef.current = setTimeout(() => {
-                        connect()
-                    }, reconnectDelay)
-                } else if (reconnectAttempts.current >= maxReconnectAttempts) {
-                    setError('Failed to connect after multiple attempts')
-                }
-            }
-
-            wsRef.current = ws
-        } catch (err) {
-            console.error('Error creating WebSocket:', err)
-            setError('Failed to create WebSocket connection')
+  // Stock WebSocket
+  const stocks = useStockLiveData({
+    enabled: enabled && assetType === 'stock',
+    onPriceUpdate: (data) => {
+      const update: MarketUpdate = {
+        type: 'quote',
+        data: {
+          quote: {
+            price: data.price,
+            change: data.change || 0,
+            changePercent: data.changePercent || 0,
+            volume: data.volume
+          }
         }
-    }, [enabled, symbol, assetType, resolution, onUpdate])
-
-    const disconnect = useCallback(() => {
-        if (reconnectTimeoutRef.current) {
-            clearTimeout(reconnectTimeoutRef.current)
-            reconnectTimeoutRef.current = null
-        }
-
-        if (wsRef.current) {
-            // Unsubscribe before closing
-            if (wsRef.current.readyState === WebSocket.OPEN) {
-                wsRef.current.send(JSON.stringify({
-                    type: 'unsubscribe',
-                    symbol
-                }))
-            }
-
-            wsRef.current.close()
-            wsRef.current = null
-        }
-
-        setIsConnected(false)
-    }, [symbol])
-
-    const subscribe = useCallback((newSymbol: string, newAssetType: string, newResolution?: string) => {
-        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-            wsRef.current.send(JSON.stringify({
-                type: 'subscribe',
-                symbol: newSymbol,
-                assetType: newAssetType,
-                resolution: newResolution || resolution
-            }))
-        }
-    }, [resolution])
-
-    const unsubscribe = useCallback((symbolToUnsubscribe: string) => {
-        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-            wsRef.current.send(JSON.stringify({
-                type: 'unsubscribe',
-                symbol: symbolToUnsubscribe
-            }))
-        }
-    }, [])
-
-    // Connect on mount and when dependencies change
-    useEffect(() => {
-        if (enabled) {
-            connect()
-        }
-
-        return () => {
-            disconnect()
-        }
-    }, [enabled, connect, disconnect])
-
-    // Update subscription when symbol or assetType changes
-    useEffect(() => {
-        if (isConnected && wsRef.current) {
-            // Unsubscribe from previous symbol if different
-            subscribe(symbol, assetType, resolution)
-        }
-    }, [symbol, assetType, resolution, isConnected, subscribe])
-
-    return {
-        isConnected,
-        lastUpdate,
-        error,
-        subscribe,
-        unsubscribe,
-        reconnect: connect
+      }
+      setLastUpdate(new Date())
+      callbacksRef.current.onUpdate?.(update)
+    },
+    onConnect: () => {
+      setIsConnected(true)
+      callbacksRef.current.onConnect?.()
+    },
+    onDisconnect: () => {
+      setIsConnected(false)
+      callbacksRef.current.onDisconnect?.()
+    },
+    onError: (err) => {
+      setError(err.message)
+      callbacksRef.current.onError?.(err)
     }
+  })
+
+  // Crypto WebSocket
+  const crypto = useBinanceCrypto({
+    enabled: enabled && assetType === 'crypto',
+    onPriceUpdate: (data) => {
+      const update: MarketUpdate = {
+        type: 'quote',
+        data: {
+          quote: {
+            price: data.price,
+            change: data.change || 0,
+            changePercent: data.changePercent || 0,
+            volume: data.volume,
+            high: data.high,
+            low: data.low
+          }
+        }
+      }
+      setLastUpdate(new Date())
+      callbacksRef.current.onUpdate?.(update)
+    },
+    onConnect: () => {
+      setIsConnected(true)
+      callbacksRef.current.onConnect?.()
+    },
+    onDisconnect: () => {
+      setIsConnected(false)
+      callbacksRef.current.onDisconnect?.()
+    },
+    onError: (err) => {
+      setError(err.message)
+      callbacksRef.current.onError?.(err)
+    }
+  })
+
+  // Forex WebSocket
+  const forex = useForexLiveData({
+    enabled: enabled && assetType === 'forex',
+    onPriceUpdate: (data) => {
+      const update: MarketUpdate = {
+        type: 'quote',
+        data: {
+          quote: {
+            price: data.price,
+            change: data.change || 0,
+            changePercent: data.changePercent || 0
+          }
+        }
+      }
+      setLastUpdate(new Date())
+      callbacksRef.current.onUpdate?.(update)
+    },
+    onConnect: () => {
+      setIsConnected(true)
+      callbacksRef.current.onConnect?.()
+    },
+    onDisconnect: () => {
+      setIsConnected(false)
+      callbacksRef.current.onDisconnect?.()
+    },
+    onError: (err) => {
+      setError(err.message)
+      callbacksRef.current.onError?.(err)
+    }
+  })
+
+  // Subscribe to the symbol when it changes
+  useEffect(() => {
+    if (!enabled || !symbol) return
+
+    // Format symbol based on asset type
+    let formattedSymbol = symbol
+    
+    if (assetType === 'crypto') {
+      // Ensure crypto symbols have BINANCE: prefix if not present
+      if (!symbol.includes(':') && !symbol.includes('/')) {
+        formattedSymbol = `BINANCE:${symbol}`
+      }
+    }
+
+    // Subscribe to the symbol
+    if (assetType === 'stock' && stocks.isConnected) {
+      stocks.subscribe([formattedSymbol])
+    } else if (assetType === 'crypto' && crypto.isConnected) {
+      crypto.subscribe([formattedSymbol])
+    } else if (assetType === 'forex' && forex.isConnected) {
+      forex.subscribe([formattedSymbol])
+    }
+
+    // Cleanup: unsubscribe when symbol changes or component unmounts
+    return () => {
+      if (assetType === 'stock' && stocks.isConnected) {
+        stocks.unsubscribe([formattedSymbol])
+      } else if (assetType === 'crypto' && crypto.isConnected) {
+        crypto.unsubscribe([formattedSymbol])
+      } else if (assetType === 'forex' && forex.isConnected) {
+        forex.unsubscribe([formattedSymbol])
+      }
+    }
+  }, [symbol, assetType, enabled, stocks, crypto, forex])
+
+  // Get the appropriate connection status
+  const currentConnection = 
+    assetType === 'stock' ? stocks :
+    assetType === 'crypto' ? crypto :
+    forex
+
+  return {
+    isConnected: currentConnection.isConnected,
+    isConnecting: currentConnection.isConnecting,
+    error: error || currentConnection.error,
+    lastUpdate,
+    // Expose individual hooks if needed
+    stocks,
+    crypto,
+    forex
+  }
 }

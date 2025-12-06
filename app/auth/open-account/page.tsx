@@ -77,7 +77,23 @@ export default function OpenAccountPage() {
 
             setStep('verify')
         } catch (err: any) {
-            setError(err.message || 'Failed to send OTPs')
+            // Extract clean error message
+            let errorMessage = 'Failed to send OTPs';
+
+            if (err.message) {
+                // Remove technical error prefixes like "Failed to send OTP: Failed to send email:"
+                errorMessage = err.message
+                    .replace(/^Failed to send OTP:\s*/i, '')
+                    .replace(/^Failed to send email:\s*/i, '')
+                    .replace(/^Failed to send SMS:\s*/i, '');
+
+                // If it's a credential error, show a user-friendly message
+                if (errorMessage.includes('Missing credentials') || errorMessage.includes('not configured')) {
+                    errorMessage = 'OTP service is currently unavailable. Please contact support or try again later.';
+                }
+            }
+
+            setError(errorMessage)
         } finally {
             setIsLoading(false)
         }

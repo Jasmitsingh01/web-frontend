@@ -1,427 +1,115 @@
-// File: web-frontend/app/dashboard/trading/page.tsx
-// UPDATED VERSION WITH WEBSOCKET SUPPORT
-
 'use client'
 
-import { useEffect, useState, useCallback } from "react"
-import { api } from "@/lib/api"
-import { useMarketWebSocket } from "@/hooks/useMarketWebSocket"
+import { useState } from "react"
 import { WatchlistSidebar } from "@/components/dashboard/WatchlistSidebar"
 import { TradingHeader } from "@/components/dashboard/TradingHeader"
 import { TradingChart } from "@/components/dashboard/TradingChart"
 import { OrderTicket } from "@/components/dashboard/OrderTicket"
 
 export default function Trading() {
-  const [token, setToken] = useState<string | null>(null)
-  const [watchlist, setWatchlist] = useState<any[]>([])
   const [selectedSymbol, setSelectedSymbol] = useState("AAPL")
   const [selectedAssetType, setSelectedAssetType] = useState("stock")
   const [currentTimeframe, setCurrentTimeframe] = useState("1D")
-  const [candleData, setCandleData] = useState<any[]>([])
-  const [quote, setQuote] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isRefreshing, setIsRefreshing] = useState(false)
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
-  const [useWebSocket, setUseWebSocket] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
 
-  // WebSocket connection for real-time updates
-  const { isConnected: wsConnected, error: wsError } = useMarketWebSocket({
+  // Static mock data
+  const watchlist = [
+    { symbol: "AAPL", name: "Apple Inc.", price: "$175.43", change: "+1.35%", positive: true },
+    { symbol: "GOOGL", name: "Alphabet Inc.", price: "$140.23", change: "-0.79%", positive: false },
+    { symbol: "MSFT", name: "Microsoft", price: "$380.50", change: "+0.95%", positive: true }
+  ]
+
+  const candleData = [
+    { x: Date.now() - 86400000 * 5, y: [170, 175, 168, 173] },
+    { x: Date.now() - 86400000 * 4, y: [173, 178, 172, 176] },
+    { x: Date.now() - 86400000 * 3, y: [176, 180, 174, 178] },
+    { x: Date.now() - 86400000 * 2, y: [178, 182, 176, 180] },
+    { x: Date.now() - 86400000 * 1, y: [180, 185, 178, 183] },
+    { x: Date.now(), y: [183, 188, 181, 175] }
+  ]
+
+  const quote = {
     symbol: selectedSymbol,
-    assetType: selectedAssetType,
-    resolution: currentTimeframe === '1D' ? '5' : currentTimeframe === '5D' ? '15' : currentTimeframe === '1M' ? '60' : 'D',
-    enabled: useWebSocket && !!token,
-    onUpdate: useCallback((update: any) => {
-      // Update quote data
-      if (update.data.quote) {
-        setQuote(update.data.quote)
-      }
+    price: 175.43,
+    change: 2.34,
+    changePercent: 1.35,
+    volume: 52000000,
+    high: 178.50,
+    low: 173.20,
+    open: 174.00,
+    previousClose: 173.09
+  }
 
-      // Update latest candle if available
-      if (update.data.latestCandle) {
-        setCandleData(prev => {
-          const newCandle = {
-            x: update.data.latestCandle!.timestamp,
-            y: [
-              update.data.latestCandle!.open,
-              update.data.latestCandle!.high,
-              update.data.latestCandle!.low,
-              update.data.latestCandle!.close
-            ]
-          }
-
-          // Check if we need to update the last candle or add a new one
-          if (prev.length > 0) {
-            const lastCandle = prev[prev.length - 1]
-            // If timestamps match, update the last candle (same period)
-            if (lastCandle.x === newCandle.x) {
-              return [...prev.slice(0, -1), newCandle]
-            }
-          }
-
-          // Add new candle
-          return [...prev, newCandle]
-        })
-      }
-
-      setLastUpdate(new Date())
-      setIsRefreshing(false)
-    }, [])
-  })
-
-  // Fallback to polling if WebSocket fails
-  useEffect(() => {
-    if (wsError && useWebSocket) {
-      console.warn('WebSocket error, falling back to polling:', wsError)
-      setUseWebSocket(false)
-    }
-  }, [wsError, useWebSocket])
-
-  // Get token and selected symbol from localStorage
-  useEffect(() => {
-    const storedToken = localStorage.getItem('token')
-    setToken(storedToken)
-
-    // Check if a symbol was selected from the markets page
-    const storedSymbol = localStorage.getItem('selectedSymbol')
-    const storedAssetType = localStorage.getItem('selectedAssetType')
-
-    if (storedSymbol) {
-      setSelectedSymbol(storedSymbol)
-      setSelectedAssetType(storedAssetType || 'stock')
-
-      // Clear the stored values after reading them
-      localStorage.removeItem('selectedSymbol')
-      localStorage.removeItem('selectedAssetType')
-    }
-  }, [])
-
-  // Fetch watchlist with live prices
-  const fetchWatchlist = useCallback(async () => {
-    if (!token) return
-
-    try {
-      const result = await api.market.getWatchlistQuotes(token)
-      const quotes = Array.isArray(result) ? result : (result.data || [])
-
-      const formatted = quotes.map((item: any) => ({
-        symbol: item.symbol,
-        name: item.symbol,
-        price: `$${item.price?.toFixed(2) || '0.00'}`,
-        change: `${item.changePercent >= 0 ? '+' : ''}${item.changePercent?.toFixed(2) || '0.00'}%`,
-        positive: item.changePercent >= 0
-      }))
-
-      setWatchlist(formatted)
-    } catch (err) {
-      console.error('Error fetching watchlist:', err)
-    }
-  }, [token])
-
-  // Fetch candle data for chart
-  const fetchCandleData = useCallback(async (symbol: string, timeframe: string = '1D') => {
-    if (!token) return
-
-    try {
-      const to = Math.floor(Date.now() / 1000)
-      let from = to
-      let resolution = 'D'
-
-      switch (timeframe) {
-        case '1D':
-          from = to - (24 * 60 * 60)
-          resolution = '5'
-          break
-        case '5D':
-          from = to - (5 * 24 * 60 * 60)
-          resolution = '15'
-          break
-        case '1M':
-          from = to - (30 * 24 * 60 * 60)
-          resolution = '60'
-          break
-        case '6M':
-          from = to - (180 * 24 * 60 * 60)
-          resolution = 'D'
-          break
-        case '1Y':
-          from = to - (365 * 24 * 60 * 60)
-          resolution = 'D'
-          break
-        default:
-          from = to - (24 * 60 * 60)
-          resolution = '5'
-      }
-
-      const result = await api.market.getCandles(token, symbol, resolution, from, to, selectedAssetType)
-
-      if (result.data && result.data.t && result.data.t.length > 0) {
-        const candles = result.data.t.map((timestamp: number, idx: number) => ({
-          x: timestamp * 1000,
-          y: [
-            result.data.o[idx],
-            result.data.h[idx],
-            result.data.l[idx],
-            result.data.c[idx]
-          ]
-        }))
-        setCandleData(candles)
-      }
-    } catch (err) {
-      console.error('Error fetching candle data:', err)
-    }
-  }, [token, selectedAssetType])
-
-  // Fetch current quote
-  const fetchQuote = useCallback(async (symbol: string, assetType: string) => {
-    if (!token) return
-
-    try {
-      const result = await api.market.getQuote(token, symbol, assetType)
-      setQuote(result.data || result)
-    } catch (err) {
-      console.error('Error fetching quote:', err)
-    }
-  }, [token])
-
-  // Initial data load
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true)
-      try {
-        if (token) {
-          await Promise.all([
-            fetchWatchlist().catch(err => console.error('Watchlist error:', err)),
-            fetchCandleData(selectedSymbol, currentTimeframe).catch(err => console.error('Candle error:', err)),
-            fetchQuote(selectedSymbol, selectedAssetType).catch(err => console.error('Quote error:', err))
-          ])
-          setLastUpdate(new Date())
-        }
-      } catch (err) {
-        console.error('Error loading data:', err)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    const timer = setTimeout(() => {
-      loadData()
-    }, 100)
-
-    return () => clearTimeout(timer)
-  }, [token, selectedSymbol, selectedAssetType, currentTimeframe, fetchWatchlist, fetchCandleData, fetchQuote])
-
-  // Auto-refresh with polling (fallback when WebSocket is not available)
-  useEffect(() => {
-    if (!token || (useWebSocket && wsConnected)) return // Skip polling if WebSocket is active
-
-    const interval = setInterval(async () => {
-      setIsRefreshing(true)
-      try {
-        await Promise.all([
-          fetchWatchlist(),
-          fetchQuote(selectedSymbol, selectedAssetType),
-          fetchCandleData(selectedSymbol, currentTimeframe)
-        ])
-        setLastUpdate(new Date())
-      } catch (err) {
-        console.error('Error refreshing data:', err)
-      } finally {
-        setIsRefreshing(false)
-      }
-    }, 5000) // Poll every 5 seconds when WebSocket is not available
-
-    return () => clearInterval(interval)
-  }, [token, selectedSymbol, selectedAssetType, currentTimeframe, useWebSocket, wsConnected, fetchWatchlist, fetchQuote, fetchCandleData])
-
-  // Handle symbol selection
   const handleSymbolSelect = (symbol: string) => {
     setSelectedSymbol(symbol)
-
-    // Determine asset type based on symbol format
-    let type = 'stock'
-    if (symbol.includes('/') && !symbol.includes('USDT')) {
-      type = 'forex'
-    } else if (['BTC', 'ETH', 'BNB', 'SOL', 'XRP', 'ADA', 'AVAX', 'DOGE'].includes(symbol) || symbol.endsWith('USDT')) {
-      type = 'crypto'
+    // Determine asset type based on symbol
+    if (symbol.includes('/')) {
+      setSelectedAssetType('forex')
+    } else if (['BTC', 'ETH', 'BNB', 'SOL'].some(crypto => symbol.includes(crypto))) {
+      setSelectedAssetType('crypto')
+    } else {
+      setSelectedAssetType('stock')
     }
-
-    setSelectedAssetType(type)
   }
 
-  // Handle timeframe change
   const handleTimeframeChange = (timeframe: string) => {
     setCurrentTimeframe(timeframe)
-    if (token) {
-      fetchCandleData(selectedSymbol, timeframe)
-    }
   }
 
-  // Mock data
-  const openOrders = [
-    { symbol: "AAPL", qty: "100 Limit", price: "213.05", status: "Working", filled: "0%", type: "Monthly Cancel" },
-    { symbol: "TSLA", qty: "50 Stop", price: "280.00", status: "Working", filled: "0%", type: "Monthly Cancel" },
-  ]
-
-  const positions = [
-    { symbol: "AAPL", qty: "300", avgPrice: "198.65", last: quote?.price?.toFixed(2) || "215.42", pl: "+$4,625.00", plPercent: "30.2%" },
-    { symbol: "Cash", qty: "-", avgPrice: "-", last: "-", pl: "-", plPercent: "$2,621.27" },
-  ]
-
-  const keyStats = [
-    { label: "Current Price", value: `$${quote?.price?.toFixed(2) || '0.00'}` },
-    { label: "Change", value: `${quote?.changePercent >= 0 ? '+' : ''}${quote?.changePercent?.toFixed(2) || '0.00'}%` },
-    { label: "Volume", value: quote?.volume?.toLocaleString() || 'N/A' },
-  ]
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4"></div>
-          <p className="text-slate-400">Loading market data...</p>
-        </div>
-      </div>
-    )
+  const handleRefresh = () => {
+    setIsLoading(true)
+    setTimeout(() => setIsLoading(false), 500)
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 text-white flex">
-      <WatchlistSidebar
-        watchlist={watchlist}
-        onSymbolSelect={handleSymbolSelect}
-        selectedSymbol={selectedSymbol}
-      />
-
-      <div className="flex-1 flex flex-col bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950">
-        <TradingHeader
-          symbol={selectedSymbol}
-          price={quote?.price}
-          change={quote?.change}
-          changePercent={quote?.changePercent}
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 text-white">
+      <div className="flex h-screen">
+        {/* Watchlist Sidebar */}
+        <WatchlistSidebar
+          watchlist={watchlist}
+          selectedSymbol={selectedSymbol}
+          onSymbolSelect={handleSymbolSelect}
         />
 
-        {/* Live Data Indicator */}
-        <div className="px-6 py-2 border-b border-white/10 bg-slate-900/30">
-          <div className="flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2">
-              <div className={`flex items-center gap-1.5 ${wsConnected ? 'text-emerald-400' : isRefreshing ? 'text-blue-400' : 'text-slate-400'}`}>
-                <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-emerald-400 animate-pulse' : isRefreshing ? 'bg-blue-400 animate-pulse' : 'bg-slate-500'}`}></div>
-                <span className="font-medium">
-                  {wsConnected ? 'Real-time (WebSocket)' : isRefreshing ? 'Updating...' : 'Live Data (Polling)'}
-                </span>
-              </div>
-              {lastUpdate && (
-                <span className="text-slate-500">
-                  • Last updated: {lastUpdate.toLocaleTimeString()}
-                </span>
-              )}
-              {wsError && !wsConnected && (
-                <span className="text-amber-500">
-                  • WebSocket unavailable
-                </span>
-              )}
+        {/* Main Trading Area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Trading Header */}
+          <TradingHeader
+            symbol={selectedSymbol}
+            price={quote.price}
+            change={quote.change}
+            changePercent={quote.changePercent}
+          />
+
+          {/* Chart and Order Ticket */}
+          <div className="flex-1 grid grid-cols-12 gap-4 p-4 overflow-hidden">
+            {/* Trading Chart */}
+            <div className="col-span-8">
+              <TradingChart
+                symbol={selectedSymbol}
+                candleData={candleData}
+                onTimeframeChange={handleTimeframeChange}
+              />
             </div>
-            <div className="text-slate-500">
-              {wsConnected ? 'Updates: ~2s' : 'Auto-refresh: 5s'}
+
+            {/* Order Ticket */}
+            <div className="col-span-4">
+              <OrderTicket
+                symbol={selectedSymbol}
+                currentPrice={quote.price}
+              />
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="flex-1 flex">
-          <div className="flex-1 flex flex-col">
-            <TradingChart
-              symbol={selectedSymbol}
-              candleData={candleData}
-              onTimeframeChange={handleTimeframeChange}
-            />
-
-            <div className="px-6 pb-6">
-              <div className="grid grid-cols-3 gap-4 mb-6">
-                {keyStats.map((stat, idx) => (
-                  <div key={idx} className="bg-transparent border border-gray-800 rounded-lg p-4">
-                    <div className="text-xs text-gray-500 mb-1">{stat.label}</div>
-                    <div className="text-lg font-semibold">{stat.value}</div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold">Open orders</h3>
-                  <span className="text-xs text-gray-500">{openOrders.length} working</span>
-                </div>
-                <div className="bg-transparent border border-gray-800 rounded-lg overflow-hidden">
-                  <table className="w-full text-xs">
-                    <thead className="bg-slate-950/50">
-                      <tr className="text-gray-400">
-                        <th className="text-left px-4 py-2 font-medium">Symbol</th>
-                        <th className="text-left px-4 py-2 font-medium">Qty</th>
-                        <th className="text-left px-4 py-2 font-medium">Price</th>
-                        <th className="text-left px-4 py-2 font-medium">Status</th>
-                        <th className="text-left px-4 py-2 font-medium">Filled</th>
-                        <th className="text-left px-4 py-2 font-medium">Type</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {openOrders.map((order, idx) => (
-                        <tr key={idx} className="border-t border-gray-800 hover:bg-slate-950/30">
-                          <td className="px-4 py-3 font-medium">{order.symbol}</td>
-                          <td className="px-4 py-3 text-emerald-400">{order.qty}</td>
-                          <td className="px-4 py-3">{order.price}</td>
-                          <td className="px-4 py-3">
-                            <span className="bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded text-xs">
-                              {order.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">{order.filled}</td>
-                          <td className="px-4 py-3 text-gray-400">{order.type}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-semibold mb-3">Positions</h3>
-                <div className="bg-transparent border border-gray-800 rounded-lg overflow-hidden">
-                  <table className="w-full text-xs">
-                    <thead className="bg-slate-950/50">
-                      <tr className="text-gray-400">
-                        <th className="text-left px-4 py-2 font-medium">Symbol</th>
-                        <th className="text-left px-4 py-2 font-medium">Qty</th>
-                        <th className="text-left px-4 py-2 font-medium">Avg price</th>
-                        <th className="text-left px-4 py-2 font-medium">Last</th>
-                        <th className="text-left px-4 py-2 font-medium">P/L</th>
-                        <th className="text-left px-4 py-2 font-medium">P/L (%/Profit)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {positions.map((pos, idx) => (
-                        <tr key={idx} className="border-t border-gray-800 hover:bg-slate-950/30">
-                          <td className="px-4 py-3 font-medium">{pos.symbol}</td>
-                          <td className="px-4 py-3">{pos.qty}</td>
-                          <td className="px-4 py-3">{pos.avgPrice}</td>
-                          <td className="px-4 py-3">{pos.last}</td>
-                          <td className={`px-4 py-3 font-medium ${pos.pl.includes('+') ? 'text-emerald-400' : 'text-red-400'}`}>
-                            {pos.pl}
-                          </td>
-                          <td className={`px-4 py-3 font-medium ${pos.pl.includes('+') ? 'text-emerald-400' : pos.plPercent.includes('$') ? 'text-gray-400' : 'text-red-400'}`}>
-                            {pos.plPercent}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <OrderTicket
-            symbol={selectedSymbol}
-            currentPrice={quote?.price}
-          />
+      {/* Demo Mode Banner */}
+      <div className="fixed bottom-4 right-4 bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-3 backdrop-blur-sm">
+        <div className="text-yellow-300 text-sm font-semibold">
+          📊 Demo Mode - No Live Data
+        </div>
+        <div className="text-yellow-200 text-xs">
+          Static mock data only
         </div>
       </div>
     </div>

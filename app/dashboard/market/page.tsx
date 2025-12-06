@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { ChevronRight } from "lucide-react"
 import { Tabs } from "@/components/ui/tabs"
@@ -9,353 +9,136 @@ import { MarketTable } from "@/components/dashboard/MarketTable"
 import { Modal } from "@/components/ui/modal"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { api } from "@/lib/api"
-import CryptoSymbolsList from "@/components/examples/CryptoSymbolsList"
 
 export default function Markets() {
     const router = useRouter()
-    const [activeTab, setActiveTab] = useState("All")
+    const [activeTab, setActiveTab] = useState("Stocks")
     const [selectedInterval, setSelectedInterval] = useState("Today")
     const [isTradeModalOpen, setIsTradeModalOpen] = useState(false)
     const [selectedAsset, setSelectedAsset] = useState<any>(null)
-    const [token, setToken] = useState<string | null>(null)
-    const [isLoading, setIsLoading] = useState(true)
+    const [isManageWatchlistOpen, setIsManageWatchlistOpen] = useState(false)
+    const [isLoading, setIsLoading] = useState(false)
+    const [isTabLoading, setIsTabLoading] = useState(false)
+    const [currentPage, setCurrentPage] = useState(1)
+    const [itemsPerPage] = useState(10)
+    const [totalItems, setTotalItems] = useState(0)
+    const [searchQuery, setSearchQuery] = useState("")
+    const [isMarketStatsHidden, setIsMarketStatsHidden] = useState(false)
 
-    // Dynamic Data States
-    const [marketOverview, setMarketOverview] = useState<any[]>([])
-    const [majorIndices, setMajorIndices] = useState<any[]>([])
-    const [topMovers, setTopMovers] = useState<any[]>([])
+    // Static mock data
+    const marketOverview = [
+        {
+            symbol: "AAPL",
+            category: "Apple Inc.",
+            price: "$175.43",
+            change: "+2.34",
+            changePercent: "+1.35%",
+            action: "Trade",
+            pair: "NASDAQ",
+            value: "175.43",
+            volume: 52000000,
+            type: "stock"
+        },
+        {
+            symbol: "GOOGL",
+            category: "Alphabet Inc.",
+            price: "$140.23",
+            change: "-1.12",
+            changePercent: "-0.79%",
+            action: "Trade",
+            pair: "NASDAQ",
+            value: "140.23",
+            volume: 28000000,
+            type: "stock"
+        },
+        // Add more mock data as needed
+    ]
 
-    // Symbol Lists
-    const [stockSymbols, setStockSymbols] = useState<any[]>([])
-    const [forexSymbols, setForexSymbols] = useState<any[]>([])
-    const [cryptoSymbols, setCryptoSymbols] = useState<any[]>([])
-    const [areSymbolsLoaded, setAreSymbolsLoaded] = useState(false)
+    const majorIndices = []
+    const topMovers = [
+        {
+            category: "Top Gainers",
+            movers: [
+                { symbol: "AAPL", name: "Apple Inc.", change: "+1.35%" },
+                { symbol: "MSFT", name: "Microsoft", change: "+0.95%" },
+                { symbol: "TSLA", name: "Tesla", change: "+0.75%" }
+            ]
+        },
+        {
+            category: "Top Losers",
+            movers: [
+                { symbol: "GOOGL", name: "Alphabet", change: "-0.79%" },
+                { symbol: "AMZN", name: "Amazon", change: "-0.45%" },
+                { symbol: "META", name: "Meta", change: "-0.32%" }
+            ]
+        }
+    ]
 
-    // Handle Trade Click - Navigate to Trading Page
-    const handleTradeClick = (symbol: string, assetType: string) => {
-        // Store the selected symbol and type in localStorage for the trading page
-        localStorage.setItem('selectedSymbol', symbol)
-        localStorage.setItem('selectedAssetType', assetType)
-
-        // Navigate to trading page
-        router.push('/dashboard/trading')
+    const marketStats = {
+        investors: "100+ symbols",
+        volatility: "2.5 pts",
+        cryptoValue: "1.2 tn",
+        timeframe: "Static Data",
+        note: "Mock data",
+        timeRemaining: "Demo Mode",
+        taxAdvantage: "No live data"
     }
 
-    // Get token from localStorage
-    useEffect(() => {
-        const storedToken = localStorage.getItem('authToken')
-        console.log("Token from localStorage:", storedToken ? `${storedToken.substring(0, 20)}...` : "null")
-        setToken(storedToken)
-    }, [])
-
-    // Fetch Symbol Lists (Once)
-    useEffect(() => {
-        const fetchSymbols = async () => {
-            console.log("fetchSymbols called, token:", token ? "exists" : "missing", "areSymbolsLoaded:", areSymbolsLoaded)
-            if (!token || areSymbolsLoaded) return
-
-            try {
-                console.log("Fetching symbol lists from backend...")
-                const [stocks, forex, crypto] = await Promise.all([
-                    api.market.getStockSymbols(token),
-                    api.market.getForexSymbols(token),
-                    api.market.getCryptoSymbols(token)
-                ])
-
-                console.log("Symbol lists received:", {
-                    stocks: stocks?.data?.length || stocks?.length || 0,
-                    forex: forex?.data?.length || forex?.length || 0,
-                    crypto: crypto?.data?.length || crypto?.length || 0
-                })
-
-                // Handle API response format (responses have .data property)
-                setStockSymbols(stocks?.data || stocks || [])
-                setForexSymbols(forex?.data || forex || [])
-                setCryptoSymbols(crypto?.data || crypto || [])
-                setAreSymbolsLoaded(true)
-            } catch (err) {
-                console.error("Error fetching symbol lists:", err)
-                // Set loaded to true even on error to prevent infinite loading
-                setAreSymbolsLoaded(true)
-            }
-        }
-
-        fetchSymbols()
-    }, [token, areSymbolsLoaded])
-
-    // Fetch Market Data
-    useEffect(() => {
-        const fetchMarketData = async () => {
-            if (!token) return
-
-            setIsLoading(true)
-            console.log("Fetching market data for tab:", activeTab)
-
-            try {
-                // 1. Fetch Major Indices (using specific symbols)
-                const indicesSymbols = ['SPY', 'QQQ', 'DIA'] // ETFs as proxies for S&P 500, Nasdaq, Dow
-                const indicesPromises = indicesSymbols.map(sym =>
-                    api.market.getQuote(token, sym, 'stock').catch(err => {
-                        console.error(`Error fetching index ${sym}:`, err)
-                        return { data: { price: 0, changePercent: 0 } }
-                    })
-                )
-                const indicesResponses = await Promise.all(indicesPromises)
-
-                const indicesData = indicesResponses.map((res: any, idx) => {
-                    const data = res.data || res
-                    const names = ["S&P 500 (ETF)", "Nasdaq 100 (ETF)", "Dow Jones (ETF)"]
-                    const change = data.changePercent || 0
-                    return {
-                        name: names[idx],
-                        value: data.price?.toFixed(2) || "0.00",
-                        change: (change >= 0 ? "+" : "") + change.toFixed(2) + "%",
-                        isPositive: change >= 0
-                    }
-                })
-                setMajorIndices(indicesData)
-
-                // 2. Fetch Market Overview based on Active Tab
-                let symbolsToFetch: { symbol: string, type: string, category: string, name?: string }[] = []
-
-                if (activeTab === 'All' || activeTab === 'Stocks') {
-                    // Take top 10 stocks, or use fallback popular stocks if none loaded
-                    if (stockSymbols.length > 0) {
-                        const stocks = stockSymbols.slice(0, 10).map(s => ({
-                            symbol: s.symbol,
-                            type: 'stock',
-                            category: 'Stocks',
-                            name: s.description // Use backend description
-                        }))
-                        symbolsToFetch = [...symbolsToFetch, ...stocks]
-                    } else {
-                        // Fallback to popular stocks with names
-                        const fallbackStocks = [
-                            { symbol: 'AAPL', name: 'Apple Inc' },
-                            { symbol: 'MSFT', name: 'Microsoft Corp' },
-                            { symbol: 'GOOGL', name: 'Alphabet Inc' },
-                            { symbol: 'AMZN', name: 'Amazon.com Inc' },
-                            { symbol: 'TSLA', name: 'Tesla Inc' },
-                            { symbol: 'NVDA', name: 'NVIDIA Corp' },
-                            { symbol: 'META', name: 'Meta Platforms' },
-                            { symbol: 'NFLX', name: 'Netflix Inc' }
-                        ]
-                        symbolsToFetch = [...symbolsToFetch, ...fallbackStocks.map(s => ({
-                            symbol: s.symbol,
-                            type: 'stock',
-                            category: 'Stocks',
-                            name: s.name
-                        }))]
-                    }
-                }
-
-                if (activeTab === 'All' || activeTab === 'Crypto') {
-                    // Take top 10 crypto, or use fallback popular crypto if none loaded
-                    if (cryptoSymbols.length > 0) {
-                        const crypto = cryptoSymbols.slice(0, 10).map(s => ({
-                            symbol: s.symbol,
-                            type: 'crypto',
-                            category: 'Crypto',
-                            name: s.description
-                        }))
-                        symbolsToFetch = [...symbolsToFetch, ...crypto]
-                    } else {
-                        // Fallback to popular crypto
-                        const fallbackCrypto = [
-                            { symbol: 'BTC', name: 'Bitcoin' },
-                            { symbol: 'ETH', name: 'Ethereum' },
-                            { symbol: 'BNB', name: 'Binance Coin' },
-                            { symbol: 'SOL', name: 'Solana' },
-                            { symbol: 'ADA', name: 'Cardano' }
-                        ]
-                        symbolsToFetch = [...symbolsToFetch, ...fallbackCrypto.map(s => ({
-                            symbol: s.symbol,
-                            type: 'crypto',
-                            category: 'Crypto',
-                            name: s.name
-                        }))]
-                    }
-                }
-
-                if (activeTab === 'All' || activeTab === 'Forex') {
-                    // Take top 10 forex, or use fallback popular pairs if none loaded
-                    if (forexSymbols.length > 0) {
-                        const forex = forexSymbols.slice(0, 10).map(s => ({
-                            symbol: s.symbol,
-                            type: 'forex',
-                            category: 'Forex',
-                            name: s.description
-                        }))
-                        symbolsToFetch = [...symbolsToFetch, ...forex]
-                    } else {
-                        // Fallback to popular forex pairs
-                        const fallbackForex = [
-                            { symbol: 'EUR/USD', name: 'Euro / US Dollar' },
-                            { symbol: 'GBP/USD', name: 'British Pound / US Dollar' },
-                            { symbol: 'USD/JPY', name: 'US Dollar / Japanese Yen' },
-                            { symbol: 'USD/CHF', name: 'US Dollar / Swiss Franc' }
-                        ]
-                        symbolsToFetch = [...symbolsToFetch, ...fallbackForex.map(s => ({
-                            symbol: s.symbol,
-                            type: 'forex',
-                            category: 'Forex',
-                            name: s.name
-                        }))]
-                    }
-                }
-
-                // Always fetch quotes with fallback data
-                if (symbolsToFetch.length === 0) {
-                    // Use default fallback if no symbols at all
-                    const fallbackStocks = [
-                        { symbol: 'AAPL', name: 'Apple Inc' },
-                        { symbol: 'MSFT', name: 'Microsoft Corp' },
-                        { symbol: 'GOOGL', name: 'Alphabet Inc' },
-                        { symbol: 'AMZN', name: 'Amazon.com Inc' },
-                        { symbol: 'TSLA', name: 'Tesla Inc' }
-                    ]
-                    symbolsToFetch = fallbackStocks.map(s => ({
-                        symbol: s.symbol,
-                        type: 'stock',
-                        category: 'Stocks',
-                        name: s.name
-                    }))
-                }
-
-                console.log(`Fetching ${symbolsToFetch.length} symbols for ${activeTab} tab`)
-
-                const overviewPromises = symbolsToFetch.map(item =>
-                    api.market.getQuote(token, item.symbol, item.type).catch(err => {
-                        console.error(`Error fetching quote for ${item.symbol}:`, err)
-                        return { data: { price: 0, change: 0, changePercent: 0 } }
-                    })
-                )
-                const overviewResponses = await Promise.all(overviewPromises)
-
-                const overviewData = overviewResponses.map((res: any, idx) => {
-                    const data = res.data || res
-                    const item = symbolsToFetch[idx]
-
-                    let displaySymbol = item.symbol
-                    if (item.category === 'Crypto') {
-                        // Clean up BINANCE: prefix if present in the source symbol
-                        displaySymbol = item.symbol.replace('BINANCE:', '').replace('USDT', '/USD')
-                        if (!displaySymbol.includes('/')) displaySymbol += '/USD'
-                    }
-
-                    return {
-                        symbol: displaySymbol,
-                        category: item.name || item.category, // Use name from backend if available
-                        price: data.price?.toFixed(2) || "0.00",
-                        change: (data.change >= 0 ? "+" : "") + (data.change?.toFixed(2) || "0.00"),
-                        changePercent: (data.changePercent?.toFixed(2) || "0.00") + "%",
-                        action: "Trade",
-                        pair: item.category === 'Stocks' ? "US" : "Global",
-                        value: data.price?.toFixed(2)
-                    }
-                })
-                setMarketOverview(overviewData)
-
-                // 3. Top Movers
-                const sortedByChange = [...overviewData].sort((a, b) => parseFloat(b.changePercent) - parseFloat(a.changePercent))
-                setTopMovers([
-                    {
-                        category: "Top Gainers",
-                        movers: sortedByChange.slice(0, 3).map(m => ({
-                            symbol: m.symbol,
-                            name: m.category, // This will now be the company name
-                            change: m.changePercent
-                        }))
-                    },
-                    {
-                        category: "Top Losers",
-                        movers: sortedByChange.slice(-3).reverse().map(m => ({
-                            symbol: m.symbol,
-                            name: m.category, // This will now be the company name
-                            change: m.changePercent
-                        }))
-                    }
-                ])
-
-            } catch (err) {
-                console.error("Error fetching market data:", err)
-                // Ensure we exit loading state even on error
-                setMarketOverview([])
-            } finally {
-                setIsLoading(false)
-            }
-        }
-
-        // Safety timeout to ensure we don't get stuck in loading state
-        const timeoutId = setTimeout(() => {
-            if (isLoading) {
-                console.warn("Market data fetch timed out, forcing loading false")
-                setIsLoading(false)
-            }
-        }, 8000)
-
-        fetchMarketData()
-
-        const interval = setInterval(fetchMarketData, 30000)
-        return () => {
-            clearInterval(interval)
-            clearTimeout(timeoutId)
-        }
-
-    }, [token, activeTab, stockSymbols, forexSymbols, cryptoSymbols])
-
-    // Calculate dynamic Market Stats
-    const calculateMarketStats = () => {
-        // Calculate total crypto market cap from fetched crypto data
-        const cryptoMarketCap = marketOverview
-            .filter(item => item.pair === 'Global')
-            .reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0)
-
-        // Calculate volatility from indices
-        const volatility = majorIndices.length > 0
-            ? Math.abs(parseFloat(majorIndices[0].change) || 0)
-            : 0
-
-        return {
-            investors: "315 mn", // This would need a separate API
-            volatility: volatility.toFixed(0) + " pts",
-            cryptoValue: cryptoMarketCap > 0
-                ? (cryptoMarketCap / 1000000).toFixed(1) + " tn"
-                : "2.5 tn",
-            timeframe: "Global Cap",
-            note: "Now 24hr figure",
-            timeRemaining: "Live",
-            taxAdvantage: "Tax-advantage account | 8 stocks and ETF available"
-        }
-    }
-
-    const marketStats = calculateMarketStats()
-
-    // Watchlists
     const watchlists = [
-        { name: "Day trading", subtitle: "Top tech & crypto bets", count: "15 symbols" },
-        { name: "FX majors", subtitle: "Top markets & pairs", count: "6 pairs" },
-        { name: "Crypto core", subtitle: "Top markets only", count: "15 majors" }
+        { 
+            name: "Stocks", 
+            subtitle: "Stock symbols", 
+            count: "50 symbols",
+            isActive: activeTab === 'Stocks',
+            type: 'Stocks',
+            isLoading: false
+        },
+        { 
+            name: "Forex", 
+            subtitle: "Forex pairs", 
+            count: "25 pairs",
+            isActive: activeTab === 'Forex',
+            type: 'Forex',
+            isLoading: false
+        },
+        { 
+            name: "Crypto", 
+            subtitle: "Crypto symbols", 
+            count: "30 symbols",
+            isActive: activeTab === 'Crypto',
+            type: 'Crypto',
+            isLoading: false
+        }
     ]
 
     const handleTrade = (item: any) => {
-        // Determine asset type from the item
-        const assetType = item.type || 'stock'
-
-        // Navigate to trading page with the symbol
-        handleTradeClick(item.symbol, assetType)
+        localStorage.setItem('selectedSymbol', item.symbol)
+        localStorage.setItem('selectedAssetType', item.type || 'stock')
+        router.push('/dashboard/trading')
     }
 
-    if (isLoading && !marketOverview.length) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 text-white flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4"></div>
-                    <p className="text-slate-400">Loading market data...</p>
-                </div>
-            </div>
-        )
+    const handleSearch = (query: string) => {
+        setSearchQuery(query)
+    }
+
+    const handleTabChange = (tab: string) => {
+        if (tab === activeTab) return
+        setIsTabLoading(true)
+        setActiveTab(tab)
+        setCurrentPage(1)
+        setSearchQuery("")
+        setTimeout(() => {
+            setIsTabLoading(false)
+        }, 300)
+    }
+
+    const totalPages = Math.ceil(totalItems / itemsPerPage)
+    const startItem = (currentPage - 1) * itemsPerPage + 1
+    const endItem = Math.min(currentPage * itemsPerPage, totalItems)
+
+    const handlePageChange = (page: number) => {
+        if (page === currentPage) return
+        setCurrentPage(page)
     }
 
     return (
@@ -364,7 +147,7 @@ export default function Markets() {
                 {/* Header */}
                 <div className="mb-6">
                     <h1 className="text-2xl font-bold mb-1 text-white">Markets</h1>
-                    <p className="text-sm text-slate-400">Live markets across Forex, Bitcoin, and Crypto</p>
+                    <p className="text-sm text-slate-400">Markets across Forex, Bitcoin, and Crypto (Demo Mode - No Live Data)</p>
                 </div>
 
                 {/* Main Grid Layout */}
@@ -375,77 +158,81 @@ export default function Markets() {
                         <div className="mb-6">
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-lg font-bold text-white">Market overview</h2>
-                                <p className="text-sm text-slate-400">Trade on every stock and region</p>
+                                <p className="text-sm text-slate-400">Static demo data</p>
                             </div>
 
                             {/* Tabs */}
                             <div className="mb-4">
                                 <Tabs
-                                    tabs={["All", "Stocks", "Crypto", "Browse Crypto"]}
+                                    tabs={["Stocks", "Crypto", "Forex"]}
                                     activeTab={activeTab}
-                                    onTabChange={setActiveTab}
+                                    onTabChange={handleTabChange}
+                                    isLoading={isTabLoading}
                                 />
                             </div>
 
-                            {/* Conditional Content Based on Active Tab */}
-                            {activeTab === "Browse Crypto" ? (
-                                // Show Crypto Symbols Browser
-                                <div className="mt-6">
-                                    <CryptoSymbolsList />
+                            {/* Search Bar */}
+                            <div className="mb-4">
+                                <SearchInput 
+                                    placeholder="Search symbols, pairs, or token" 
+                                    value={searchQuery}
+                                    onChange={(e) => handleSearch(e.target.value)}
+                                />
+                            </div>
+
+                            {/* Market Overview Table */}
+                            <div className="relative">
+                                <MarketTable
+                                    data={marketOverview}
+                                    onTrade={handleTrade}
+                                    isLoading={isLoading}
+                                />
+                            </div>
+
+                            {/* Pagination */}
+                            {totalPages > 1 && (
+                                <div className="mt-4 flex items-center justify-between text-sm">
+                                    <span className="text-slate-400">
+                                        Showing {startItem}-{endItem} of {totalItems}
+                                    </span>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => handlePageChange(currentPage - 1)}
+                                            disabled={currentPage === 1}
+                                            className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            Previous
+                                        </button>
+                                        <span className="px-3 py-1">
+                                            Page {currentPage} of {totalPages}
+                                        </span>
+                                        <button
+                                            onClick={() => handlePageChange(currentPage + 1)}
+                                            disabled={currentPage === totalPages}
+                                            className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
                                 </div>
-                            ) : (
-                                <>
-                                    {/* Search Bar */}
-                                    <div className="mb-4">
-                                        <SearchInput placeholder="Search symbols, pairs, or token" />
-                                    </div>
-
-                                    {/* Interval Filters */}
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <span className="text-xs text-slate-400">Interval:</span>
-                                        <div className="flex flex-wrap gap-1">
-                                            {["Today", "1W", "1M", "3M", "6M", "1Y", "All", "Max"].map((interval) => (
-                                                <button
-                                                    key={interval}
-                                                    onClick={() => setSelectedInterval(interval)}
-                                                    className={`px-3 py-1 rounded text-xs font-medium transition ${selectedInterval === interval
-                                                        ? 'bg-emerald-500 text-white hover:bg-emerald-500/90'
-                                                        : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
-                                                        }`}
-                                                >
-                                                    {interval}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Market Overview Table */}
-                                    <MarketTable items={marketOverview} onAction={handleTrade} />
-
-                                    <p className="text-xs text-slate-500 mt-3">
-                                        This information may be delayed 15-20 minutes on various services.
-                                    </p>
-                                </>
                             )}
                         </div>
 
-                        {/* Top Movers by Asset */}
+                        {/* Top Movers */}
                         <div>
                             <h2 className="text-lg font-bold mb-4 text-white">Top movers</h2>
-                            <p className="text-xs text-slate-400 mb-4">Biggest gainers and falling fast</p>
-
-                            <div className="grid grid-cols-2 gap-6">
+                            <div className="grid grid-cols-2 gap-4">
                                 {topMovers.map((section, idx) => (
-                                    <div key={idx}>
-                                        <h3 className="text-sm font-bold mb-3 text-slate-300">{section.category}</h3>
+                                    <div key={idx} className="bg-slate-900/50 backdrop-blur-sm border border-white/10 rounded-lg p-4">
+                                        <h3 className="text-sm font-semibold mb-3 text-emerald-400">{section.category}</h3>
                                         <div className="space-y-2">
-                                            {section.movers.map((mover: any, moverIdx: number) => (
-                                                <div key={moverIdx} className="flex items-center justify-between p-3 border border-white/10 rounded-lg bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm hover:bg-white/5">
+                                            {section.movers.map((mover, moverIdx) => (
+                                                <div key={moverIdx} className="flex justify-between items-center">
                                                     <div>
-                                                        <div className="font-semibold text-sm text-white">{mover.symbol}</div>
+                                                        <div className="font-medium text-white">{mover.symbol}</div>
                                                         <div className="text-xs text-slate-400">{mover.name}</div>
                                                     </div>
-                                                    <div className={`text-xs font-medium px-2 py-1 rounded ${mover.change.includes('-') ? 'text-red-400 bg-red-500/10' : 'text-emerald-400 bg-emerald-500/10'}`}>
+                                                    <div className={`font-semibold ${mover.change.startsWith('+') ? 'text-emerald-400' : 'text-red-400'}`}>
                                                         {mover.change}
                                                     </div>
                                                 </div>
@@ -457,150 +244,79 @@ export default function Markets() {
                         </div>
                     </div>
 
-                    {/* Right Sidebar */}
-                    <div className="col-span-4">
-                        {/* Major Indices */}
-                        <div className="mb-6">
-                            <div className="flex items-center justify-between mb-3">
-                                <h2 className="text-lg font-bold text-white">Major indices</h2>
-                                <button className="px-3 py-1 bg-white/5 text-slate-400 rounded text-xs font-medium hover:bg-white/10 hover:text-white">
-                                    Hide
-                                </button>
-                            </div>
-                            <p className="text-xs text-slate-400 mb-4">Market Proxies (ETFs)</p>
-
-                            <div className="space-y-3">
-                                {isLoading && majorIndices.length === 0 ? (
-                                    // Loading skeleton
-                                    [1, 2, 3].map((i) => (
-                                        <div key={i} className="p-4 border border-white/10 rounded-lg bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm animate-pulse">
-                                            <div className="flex justify-between items-center mb-2">
-                                                <div className="h-3 bg-slate-700 rounded w-24"></div>
-                                                <div className="h-3 bg-slate-700 rounded w-12"></div>
-                                            </div>
-                                            <div className="h-8 bg-slate-700 rounded w-32"></div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    majorIndices.map((index, idx) => (
-                                        <div key={idx} className="p-4 border border-white/10 rounded-lg bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm">
-                                            <div className="flex justify-between items-center">
-                                                <div className="text-xs text-slate-400 mb-1">{index.name}</div>
-                                                <div className={`text-xs font-medium ${index.isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-                                                    {index.change}
-                                                </div>
-                                            </div>
-                                            <div className="text-2xl font-bold text-white">${index.value}</div>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        </div>
-
+                    {/* Right Section - Market Stats & Watchlists */}
+                    <div className="col-span-4 space-y-6">
                         {/* Market Stats */}
-                        <div className="mb-6 p-4 border border-white/10 rounded-lg bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm">
-                            <h2 className="text-lg font-bold mb-4 text-white">Market stats</h2>
-
-                            <div className="space-y-4">
-                                <div>
-                                    <div className="text-xs text-slate-400 mb-1">Investors and volatility</div>
-                                    <div className="flex items-baseline gap-2">
-                                        <span className="text-xl font-bold text-white">{marketStats.investors}</span>
-                                        <span className="text-sm text-slate-400">mn</span>
-                                    </div>
+                        {!isMarketStatsHidden && (
+                            <div className="bg-slate-900/50 backdrop-blur-sm border border-white/10 rounded-lg p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-lg font-bold text-white">Market stats</h2>
+                                    <button
+                                        onClick={() => setIsMarketStatsHidden(true)}
+                                        className="text-slate-400 hover:text-white"
+                                    >
+                                        ✕
+                                    </button>
                                 </div>
-
-                                <div>
-                                    <div className="text-xs text-slate-400 mb-1">Near 52w figure</div>
-                                    <div className="flex items-baseline gap-2">
-                                        <span className="text-xl font-bold text-white">{marketStats.volatility}</span>
-                                        <span className="text-sm text-slate-400">pts</span>
+                                <div className="space-y-4">
+                                    <div>
+                                        <div className="text-sm text-slate-400 mb-1">{activeTab} symbols</div>
+                                        <div className="text-2xl font-bold text-white">{marketStats.investors}</div>
                                     </div>
-                                </div>
-
-                                <div>
-                                    <div className="text-xs text-slate-400 mb-1">Global Crypto Cap</div>
-                                    <div className="flex items-baseline gap-2">
-                                        <span className="text-xl font-bold text-white">{marketStats.cryptoValue}</span>
-                                        <span className="text-sm text-slate-400"></span>
+                                    <div>
+                                        <div className="text-sm text-slate-400 mb-1">Average volatility</div>
+                                        <div className="text-2xl font-bold text-white">{marketStats.volatility}</div>
                                     </div>
-                                    <div className="text-xs text-slate-500 mt-1">{marketStats.timeframe}</div>
-                                </div>
-
-                                <div>
-                                    <div className="text-xs text-slate-400 mb-1">Market Status</div>
-                                    <div className="flex items-baseline gap-2">
-                                        <span className="text-xl font-bold text-white">{marketStats.timeRemaining}</span>
+                                    <div>
+                                        <div className="text-sm text-slate-400 mb-1">Market Cap</div>
+                                        <div className="text-2xl font-bold text-white">{marketStats.cryptoValue}</div>
+                                    </div>
+                                    <div className="pt-4 border-t border-white/10">
+                                        <div className="text-xs text-slate-500">{marketStats.taxAdvantage}</div>
                                     </div>
                                 </div>
                             </div>
-
-                            <div className="mt-4 pt-4 border-t border-white/10">
-                                <p className="text-xs text-slate-500">{marketStats.taxAdvantage}</p>
-                            </div>
-                        </div>
+                        )}
 
                         {/* Watchlists */}
-                        <div className="p-4 border border-white/10 rounded-lg bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm">
+                        <div className="bg-slate-900/50 backdrop-blur-sm border border-white/10 rounded-lg p-6">
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-lg font-bold text-white">Watchlists</h2>
-                                <Button size="sm" className="bg-emerald-500 text-white hover:bg-emerald-500/90 h-7 text-xs">
+                                <button
+                                    onClick={() => setIsManageWatchlistOpen(true)}
+                                    className="text-sm text-emerald-400 hover:text-emerald-300"
+                                >
                                     Manage
-                                </Button>
+                                </button>
                             </div>
-
                             <div className="space-y-3">
                                 {watchlists.map((list, idx) => (
-                                    <div key={idx} className="p-3 border border-white/10 rounded-lg hover:bg-white/5 cursor-pointer">
+                                    <div
+                                        key={idx}
+                                        onClick={() => handleTabChange(list.type)}
+                                        className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                                            list.isActive
+                                                ? 'bg-emerald-500/20 border border-emerald-500/50'
+                                                : 'bg-slate-800/50 hover:bg-slate-800 border border-transparent'
+                                        }`}
+                                    >
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <div className="font-semibold text-sm mb-1 text-white">{list.name}</div>
+                                                <div className="font-medium text-white">{list.name}</div>
                                                 <div className="text-xs text-slate-400">{list.subtitle}</div>
                                             </div>
-                                            <ChevronRight className="w-4 h-4 text-slate-400" />
+                                            <div className="text-right">
+                                                <div className="font-semibold text-white">{list.count}</div>
+                                                {list.isActive && <ChevronRight className="w-4 h-4 text-emerald-400 ml-auto" />}
+                                            </div>
                                         </div>
-                                        <div className="text-xs text-slate-400 mt-2">{list.count}</div>
                                     </div>
                                 ))}
-                            </div>
-
-                            <div className="mt-4">
-                                <button className="text-xs text-emerald-400 hover:underline">
-                                    Have watchlist or digital from portfolio
-                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-
-            {/* Trade Modal */}
-            <Modal
-                isOpen={isTradeModalOpen}
-                onClose={() => setIsTradeModalOpen(false)}
-                title={`Trade ${selectedAsset?.symbol || ''}`}
-            >
-                <div className="space-y-4">
-                    <div className="flex justify-between items-center text-sm text-slate-400">
-                        <span>Current Price</span>
-                        <span className="text-white font-bold">${selectedAsset?.price}</span>
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-xs font-medium text-slate-300">Amount</label>
-                        <Input placeholder="Enter amount..." className="bg-slate-900 border-white/10 text-white" />
-                    </div>
-                    <div className="flex gap-2 mt-4">
-                        <Button className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white" onClick={() => {
-                            alert(`Buy order placed for ${selectedAsset?.symbol}`);
-                            setIsTradeModalOpen(false);
-                        }}>Buy</Button>
-                        <Button className="flex-1 bg-red-500 hover:bg-red-600 text-white" onClick={() => {
-                            alert(`Sell order placed for ${selectedAsset?.symbol}`);
-                            setIsTradeModalOpen(false);
-                        }}>Sell</Button>
-                    </div>
-                </div>
-            </Modal>
         </div>
     )
 }

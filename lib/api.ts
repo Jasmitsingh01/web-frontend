@@ -489,13 +489,7 @@ export const graphqlApi = {
   },
 
   market: {
-    getQuote: async (token: string, symbol: string, assetType: string) => {
-      return restRequest(`/market/quote?symbol=${symbol}&assetType=${assetType}`, 'GET', undefined, token);
-    },
 
-    getWatchlistQuotes: async (token: string) => {
-      return restRequest('/market/watchlist-quotes', 'GET', undefined, token);
-    },
 
     search: async (token: string, query: string) => {
       return restRequest(`/market/search?query=${query}`, 'GET', undefined, token);
@@ -522,20 +516,49 @@ export const graphqlApi = {
       return restRequest(`/market/stocks/symbols?exchange=${exchange}`, 'GET', undefined, token);
     },
 
-    getForexExchanges: async (token: string) => {
-      return restRequest('/market/forex/exchanges', 'GET', undefined, token);
+    getForexSymbols: async (token: string) => {
+      return restRequest('/forex/symbols', 'GET', undefined, token);
     },
 
-    getForexSymbols: async (token: string, exchange: string = 'OANDA') => {
-      return restRequest(`/market/forex/symbols?exchange=${exchange}`, 'GET', undefined, token);
+    getCryptoSymbols: async (token: string) => {
+      return restRequest('/crypto/symbols', 'GET', undefined, token);
     },
 
-    getCryptoExchanges: async (token: string) => {
-      return restRequest('/market/crypto/exchanges', 'GET', undefined, token);
+    // Indian Stocks endpoints
+    getIndianStocks: async (token: string) => {
+      return restRequest('/indian-stocks/all', 'GET', undefined, token);
     },
 
-    getCryptoSymbols: async (token: string, exchange: string = 'BINANCE') => {
-      return restRequest(`/market/crypto/symbols?exchange=${exchange}`, 'GET', undefined, token);
+    getIndianStocksByExchange: async (token: string, exchange: 'NSE' | 'BSE') => {
+      return restRequest(`/indian-stocks/exchange/${exchange}`, 'GET', undefined, token);
+    },
+
+    searchIndianStocks: async (token: string, query: string, limit: number = 50) => {
+      return restRequest(`/indian-stocks/search?q=${query}&limit=${limit}`, 'GET', undefined, token);
+    },
+
+    // Get all crypto symbols
+    getAllCrypto: async (token: string) => {
+      return restRequest('/crypto/symbols', 'GET', undefined, token);
+    },
+
+    // Popular/Paginated endpoints
+    getPopularCrypto: async (token: string, count: number = 20) => {
+      return restRequest(`/crypto/symbols/popular?count=${count}`, 'GET', undefined, token);
+    },
+
+    // Get all forex symbols
+    getAllForex: async (token: string) => {
+      return restRequest('/forex/symbols', 'GET', undefined, token);
+    },
+
+    getMajorForexPairs: async (token: string) => {
+      return restRequest('/forex/symbols/major', 'GET', undefined, token);
+    },
+
+    // Live data WebSocket status
+    getLiveDataStatus: async (token: string) => {
+      return restRequest('/ws/status', 'GET', undefined, token);
     }
   },
 
@@ -562,6 +585,85 @@ export const graphqlApi = {
 
     getBySymbol: async (token: string, symbol: string) => {
       return restRequest(`/indian-stocks/symbol/${symbol}`, 'GET', undefined, token);
+    }
+  },
+
+  news: {
+    // Get general market news
+    getMarketNews: async (token: string, params?: { category?: string; limit?: number; region?: string }) => {
+      const queryParams = new URLSearchParams();
+      if (params?.category) queryParams.append('category', params.category);
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.region) queryParams.append('region', params.region);
+      
+      const url = `/news${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      return restRequest(url, 'GET', undefined, token);
+    },
+
+    // Get breaking news
+    getBreakingNews: async (token: string) => {
+      return restRequest('/news/breaking', 'GET', undefined, token);
+    },
+
+    // Get crypto news
+    getCryptoNews: async (token: string, limit?: number) => {
+      const url = `/news/crypto${limit ? `?limit=${limit}` : ''}`;
+      return restRequest(url, 'GET', undefined, token);
+    },
+
+    // Get forex news
+    getForexNews: async (token: string, limit?: number) => {
+      const url = `/news/forex${limit ? `?limit=${limit}` : ''}`;
+      return restRequest(url, 'GET', undefined, token);
+    },
+
+    // Get stock news
+    getStockNews: async (token: string, params?: { symbol?: string; limit?: number; from?: string; to?: string }) => {
+      const queryParams = new URLSearchParams();
+      if (params?.symbol) queryParams.append('symbol', params.symbol);
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.from) queryParams.append('from', params.from);
+      if (params?.to) queryParams.append('to', params.to);
+      
+      const url = `/news/stocks${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      return restRequest(url, 'GET', undefined, token);
+    },
+
+    // Search news
+    searchNews: async (token: string, query: string, params?: { from?: string; to?: string; limit?: number }) => {
+      const queryParams = new URLSearchParams();
+      queryParams.append('query', query);
+      if (params?.from) queryParams.append('from', params.from);
+      if (params?.to) queryParams.append('to', params.to);
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      
+      const url = `/news/search?${queryParams.toString()}`;
+      return restRequest(url, 'GET', undefined, token);
+    },
+
+    // Get trending stocks
+    getTrendingStocks: async (token: string) => {
+      return restRequest('/news/trending', 'GET', undefined, token);
+    },
+
+    // Get economic calendar
+    getEconomicCalendar: async (token: string, params?: { from?: string; to?: string }) => {
+      const queryParams = new URLSearchParams();
+      if (params?.from) queryParams.append('from', params.from);
+      if (params?.to) queryParams.append('to', params.to);
+      
+      const url = `/news/economic-calendar${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      return restRequest(url, 'GET', undefined, token);
+    },
+
+    // Get individual news article by ID
+    getNewsById: async (token: string, id: string) => {
+      return restRequest(`/news/${id}`, 'GET', undefined, token);
+    },
+
+    // Get news sentiment for a symbol
+    getNewsSentiment: async (token: string, symbol: string) => {
+      return restRequest(`/news/sentiment/${symbol}`, 'GET', undefined, token);
     }
   }
 };

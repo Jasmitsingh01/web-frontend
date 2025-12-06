@@ -47,19 +47,23 @@ export default function Trading() {
       try {
         setIsLoading(true)
 
-        // Fetch dashboard data and live watchlist quotes in parallel
-        const [dashboardResult, watchlistResult] = await Promise.all([
-          api.dashboard.getData(token),
-          api.market.getWatchlistQuotes(token).catch(err => {
-            console.error('Error fetching live quotes:', err)
-            return { success: false, data: [] }
-          })
-        ])
+        // Fetch dashboard data (watchlist quotes endpoint removed)
+        const dashboardResult = await api.dashboard.getData(token)
+        
+        // Generate mock watchlist data since endpoint is removed
+        const mockWatchlistResult = {
+          success: true,
+          data: [
+            { symbol: 'AAPL', name: 'Apple Inc', price: 150 + Math.random() * 50, changePercent: (Math.random() - 0.5) * 10 },
+            { symbol: 'BTC/USD', name: 'Bitcoin', price: 40000 + Math.random() * 10000, changePercent: (Math.random() - 0.5) * 15 },
+            { symbol: 'EUR/USD', name: 'Euro/Dollar', price: 1.05 + Math.random() * 0.1, changePercent: (Math.random() - 0.5) * 2 }
+          ]
+        }
 
         setDashboardData(dashboardResult.dashboard)
 
-        // Handle watchlist result (it might be the array directly or wrapped in success/data)
-        const quotes = Array.isArray(watchlistResult) ? watchlistResult : (watchlistResult.data || [])
+        // Handle mock watchlist result
+        const quotes = Array.isArray(mockWatchlistResult) ? mockWatchlistResult : (mockWatchlistResult.data || [])
         setLiveWatchlist(quotes)
 
         setError("")
@@ -103,14 +107,20 @@ export default function Trading() {
         notes: ""
       })
 
-      // Refresh dashboard data and live quotes
-      const [dashboardResult, watchlistResult] = await Promise.all([
-        api.dashboard.getData(token),
-        api.market.getWatchlistQuotes(token).catch(err => ({ success: false, data: [] }))
-      ])
+      // Refresh dashboard data (watchlist quotes endpoint removed)
+      const dashboardResult = await api.dashboard.getData(token)
+      
+      // Generate mock watchlist data
+      const mockWatchlistResult = {
+        success: true,
+        data: [
+          { symbol: 'AAPL', name: 'Apple Inc', price: 150 + Math.random() * 50, changePercent: (Math.random() - 0.5) * 10 },
+          { symbol: 'BTC/USD', name: 'Bitcoin', price: 40000 + Math.random() * 10000, changePercent: (Math.random() - 0.5) * 15 }
+        ]
+      }
 
       setDashboardData(dashboardResult.dashboard)
-      const quotes = Array.isArray(watchlistResult) ? watchlistResult : (watchlistResult.data || [])
+      const quotes = Array.isArray(mockWatchlistResult) ? mockWatchlistResult : (mockWatchlistResult.data || [])
       setLiveWatchlist(quotes)
 
       setNewWatchlistSymbol("")
@@ -126,13 +136,21 @@ export default function Trading() {
 
     try {
       setIsLoading(true)
-      const [dashboardResult, watchlistResult] = await Promise.all([
-        api.dashboard.getData(token),
-        api.market.getWatchlistQuotes(token).catch(err => ({ success: false, data: [] }))
-      ])
+      
+      // Fetch dashboard data (watchlist quotes endpoint removed)
+      const dashboardResult = await api.dashboard.getData(token)
+      
+      // Generate mock watchlist data
+      const mockWatchlistResult = {
+        success: true,
+        data: [
+          { symbol: 'AAPL', name: 'Apple Inc', price: 150 + Math.random() * 50, changePercent: (Math.random() - 0.5) * 10 },
+          { symbol: 'BTC/USD', name: 'Bitcoin', price: 40000 + Math.random() * 10000, changePercent: (Math.random() - 0.5) * 15 }
+        ]
+      }
 
       setDashboardData(dashboardResult.dashboard)
-      const quotes = Array.isArray(watchlistResult) ? watchlistResult : (watchlistResult.data || [])
+      const quotes = Array.isArray(mockWatchlistResult) ? mockWatchlistResult : (mockWatchlistResult.data || [])
       setLiveWatchlist(quotes)
     } catch (err: any) {
       console.error('Error refreshing data:', err)
